@@ -1,9 +1,9 @@
 PYINST = pyinstaller
 
 FILE_NAME =--name Parrot_BOT
-FILE_SETTINGS =--add-data Parrot_BOT_settings.txt:Parrot_BOT
+CONFIGS =--add-data Parrot_BOT.toml:Parrot_BOT
 FILE_ICON =--icon src/resources/images/parrot-trapping-wasabi.ico
-FLAGS =--onefile --debug all --console --distpath ./ $(FILE_NAME) $(FILE_VERSION) $(FILE_SETTINGS) $(FILE_ICON)
+FLAGS =--onefile --debug all --console --distpath ./ $(FILE_NAME) $(FILE_VERSION) $(CONFIGS) $(FILE_ICON)
 
 FILES = src/main.py src/GetValues.py src/resources/ConsoleMessagesHandling.py src/resources/IpAddressGrabber.py src/resources/LatestLogParser.py
 SEPARATOR = ------------------------------------------------------------------------------------------
@@ -23,7 +23,7 @@ build_clean:
 	$(PYINST) $(FILES) $(FLAGS) --clean
 	powershell Remove-Item -r "*.spec"
 	@echo $(SEPARATOR)
-	@echo Cleaned the cache
+	@echo Successfully created the executable
 	@echo $(SEPARATOR)
 
 build:
