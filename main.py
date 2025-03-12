@@ -27,14 +27,14 @@ class Client(commands.Bot):
         self.startup_time = ""
 
     async def on_ready(self):
-        MSG.printINFO(f'logged in as {client.user} (ID: {client.user.id})')
+        MSG.printINFO(f"logged in as {client.user} (ID: {client.user.id})")
         MSG.printWARNING("press [CTRL]+[C] to stop the bot, enjoy :)")
 
         try:
             synced = await self.tree.sync(guild=GUILD_ID)
-            MSG.printINFO(f'syncronized {len(synced)} command(s)')
+            MSG.printINFO(f"syncronized {len(synced)} command(s)")
         except Exception as e:
-            MSG.printERROR(f'commands syncronization error: {e}')
+            MSG.printERROR(f"commands syncronization error: {e}")
 
     async def setup_hook(self) -> None:
         self.tree.copy_global_to(guild=GUILD_ID)
@@ -45,16 +45,22 @@ class Client(commands.Bot):
 
         try:
             channel = self.get_channel(settings.channel_id)
-            previous_message = await channel.fetch_message(settings.server_status_message_id)
+            previous_message = await channel.fetch_message(
+                settings.server_status_message_id
+            )
             self.player_count = MCLOG.parseLatestLogForPlayerCount(
-                settings.latest_log_path)
+                settings.latest_log_path
+            )
             self.server_status = MCLOG.parseLatestLogForServerStatus(
-                settings.latest_log_path)
+                settings.latest_log_path
+            )
             server_status_embed = getServerStatusEmbed(
-                self.server_status, self.player_count)
+                self.server_status, self.player_count
+            )
             await previous_message.edit(embed=server_status_embed)
             MSG.printINFO(
-                f'"server_status_embed" updated, server {self.server_status} with {self.player_count} players')
+                f'"server_status_embed" updated, server {self.server_status} with {self.player_count} players'
+            )
 
         except Exception as e:
             MSG.printERROR(f'failed "server_status_embed" update: {e}')
@@ -66,7 +72,9 @@ class Client(commands.Bot):
             self.startup_time = now.strftime(DATETIME_FORMAT)
             self.after_online = True
 
-            previous_message = await getMessage(settings.channel_id, settings.addresses_message_id)
+            previous_message = await getMessage(
+                settings.channel_id, settings.addresses_message_id
+            )
             addresses_embed = await getAddressesEmbed()
 
             if previous_message is not None:
@@ -86,11 +94,16 @@ client = Client(command_prefix="/", intents=intents)
 
 ### commands #########################################################################################################
 
-@client.tree.command(name="sendaddresses", description="Invia gli indirizzi per il colegamento al server")
+
+@client.tree.command(
+    name="sendaddresses", description="Invia gli indirizzi per il colegamento al server"
+)
 async def sendaddresses(interaction: discord.Interaction):
     MSG.printINFO(f'"/sendaddresses" invoked by {interaction.user}')
     await interaction.response.defer()
-    previous_message: discord.Message = await getMessage(settings.channel_id, settings.addresses_message_id)
+    previous_message: discord.Message = await getMessage(
+        settings.channel_id, settings.addresses_message_id
+    )
     addresses_embed: discord.Embed = getAddressesEmbed()
 
     try:
@@ -98,7 +111,8 @@ async def sendaddresses(interaction: discord.Interaction):
         await interaction.followup.send("Ho modificato il messaggio già esistente")
     except Exception as e:
         MSG.printERROR(
-            f"couldn't edit the addresses message, sending a new message. Error: {e}")
+            f"couldn't edit the addresses message, sending a new message. Error: {e}"
+        )
         await interaction.followup.send(embed=addresses_embed)
         settings.updateValues()
 
@@ -108,8 +122,7 @@ async def sendstatus(interaction: discord.Interaction):
     MSG.printINFO(f'"/sendstatus" invoked by {interaction.user}')
     await interaction.response.defer(thinking=True)
 
-    server_status = MCLOG.parseLatestLogForServerStatus(
-        settings.latest_log_path)
+    server_status = MCLOG.parseLatestLogForServerStatus(settings.latest_log_path)
     player_count = MCLOG.parseLatestLogForPlayerCount(settings.latest_log_path)
 
     server_status_embed = getServerStatusEmbed(server_status, player_count)
@@ -119,19 +132,31 @@ async def sendstatus(interaction: discord.Interaction):
 
 ### other functions ##################################################################################################
 
+
 def getAddressesEmbed() -> discord.Embed:
     now = datetime.now()
     current_time = now.strftime(DATETIME_FORMAT)
 
-    addresses_embed = discord.Embed(title="parrot-trapping-wasabi",
-                                    description="Indirizzi per la connessione al server",
-                                    colour=discord.Color.green())
+    addresses_embed = discord.Embed(
+        title="parrot-trapping-wasabi",
+        description="Indirizzi per la connessione al server",
+        colour=discord.Color.green(),
+    )
     addresses_embed.add_field(
-        name="Indirizzo locale:", value=f'||{IP.ipAddressGrabber("Ethernet")}||', inline=False)
+        name="Indirizzo locale:",
+        value=f'||{IP.ipAddressGrabber("Ethernet")}||',
+        inline=False,
+    )
     addresses_embed.add_field(
-        name="Indirizzo Hamachi:", value=f'||{IP.ipAddressGrabber("Hamachi")}||', inline=False)
+        name="Indirizzo Hamachi:",
+        value=f'||{IP.ipAddressGrabber("Hamachi")}||',
+        inline=False,
+    )
     addresses_embed.add_field(
-        name="Indirizzo e4mc:", value=f'||{MCLOG.parseLatestLogE4MCAddress(settings.latest_log_path)}||', inline=False)
+        name="Indirizzo e4mc:",
+        value=f"||{MCLOG.parseLatestLogE4MCAddress(settings.latest_log_path)}||",
+        inline=False,
+    )
     addresses_embed.set_footer(text=f"ultimo aggiornamento: {current_time}")
 
     return addresses_embed
@@ -139,14 +164,17 @@ def getAddressesEmbed() -> discord.Embed:
 
 def getServerStatusEmbed(server_status: str, player_count: int) -> discord.Embed:
     server_status_embed = discord.Embed(
-        title="parrot-trapping-wasabi", colour=discord.Color.green())
+        title="parrot-trapping-wasabi", colour=discord.Color.green()
+    )
     server_status_embed.add_field(name="Server Status:", value=server_status)
     if server_status == "🔴 Offline":
         server_status_embed.add_field(
-            name="Players online:", value=f'0/{settings.max_players}')
+            name="Players online:", value=f"0/{settings.max_players}"
+        )
     else:
         server_status_embed.add_field(
-            name="Players online:", value=f'{player_count}/{settings.max_players}')
+            name="Players online:", value=f"{player_count}/{settings.max_players}"
+        )
     server_status_embed.set_footer(text=f"ultimo avvio: {client.startup_time}")
 
     return server_status_embed
@@ -161,9 +189,11 @@ async def getMessage(channel_id: int, message_id: int) -> discord.Message:
                 return await channel.fetch_message(message_id)
             except Exception as e:
                 MSG.printERROR(f"Unable to fetch the message: {e}")
-    except discord.errors.NotFound:
+    except Exception as e:
+        MSG.printERROR(f'Error with "channel_id": {e}')
         return None
 
     return None
+
 
 client.run(settings.bot_token)

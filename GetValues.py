@@ -1,3 +1,4 @@
+import tomli
 BOT_VALUES_FILE = "Parrot_BOT_settings.txt"
 
 class Settings:
