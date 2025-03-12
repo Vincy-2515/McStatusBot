@@ -85,14 +85,14 @@ client = Client(command_prefix="/", intents=intents)
 async def sendaddresses(interaction: discord.Interaction):
     MSG.printINFO(f'"/sendaddresses" invoked by {interaction.user}')
     await interaction.response.defer()
-    previous_message = await getMessage(settings.channel_id, settings.addresses_message_id)
-    addresses_embed = getAddressesEmbed()
+    previous_message:discord.Message = await getMessage(settings.channel_id, settings.addresses_message_id)
+    addresses_embed:discord.Embed = getAddressesEmbed()
 
-    if previous_message is not None:
-        previous_message.edit(embed=addresses_embed)
+    try:
+        await previous_message.edit(embed=addresses_embed)
         await interaction.followup.send("Ho modificato il messaggio già esistente")
-    else:
-        MSG.printERROR(f"couldn't edit the addresses message, sending a new message")
+    except Exception as e:
+        MSG.printERROR(f"couldn't edit the addresses message, sending a new message. Error: {e}")
         await interaction.followup.send(embed=addresses_embed)
         settings.updateValues()
 
@@ -138,13 +138,13 @@ def getServerStatusEmbed (server_status: str, player_count: int) -> discord.Embe
 
     return server_status_embed
 
-async def getMessage (channel_id:int, message_id:int):
+async def getMessage (channel_id:int, message_id:int) -> discord.Message:
     channel = client.get_channel(channel_id)
 
     try:
         if channel is not None:
             try:
-                await channel.fetch_message(message_id)
+                return await channel.fetch_message(message_id)
             except Exception as e:
                 MSG.printERROR(f"Unable to fetch the message: {e}")
     except discord.errors.NotFound:
