@@ -1,0 +1,30 @@
+{
+	"folders": [
+		{
+			"path": ".."
+		}
+	],
+	"settings": {
+		"makefile.makePath": "C:\\msys64\\ucrt64\\bin\\mingw32-make.exe",
+		"makefile.configurations": [
+			{
+				"name": "Default",
+				"makeArgs": []
+			}
+		],
+		"makefile.launchConfigurations": [
+			{
+				"cwd": "C:\\Users\\vince\\Desktop\\Code\\Python\\parrotBOT\\",
+				"binaryPath": "C:\\Users\\vince\\Desktop\\Code\\Python\\parrotBOT\\Parrot_BOT.exe",
+				"binaryArgs": []
+			}
+		]
+	},
+	"launch": {
+		"version": "0.2.0",
+		"configurations": [
+			
+
+		]
+	}
+}

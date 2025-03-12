@@ -1,0 +1,17 @@
+[discord]
+bot_token: MTM0MTg0NjI1NjE4MzQxMDc1OQ.Gapr6S.6jtSm5bmutMxnzRE7yt8f1HUwJBu5vMR0socQ4
+server_id: 1348022050891104256
+channel_id: 1348040344629022892
+server_status_message_id: 1348784459977064639
+addresses_message_id: 1348784480831406213
+updateServerStatusEmbed_task_delay: 10
+
+[minecraft]
+max_players: 5
+latest_log_path: src\resources\mc-logs\latest.log
+
+### NOTES ###
+TUTTI I CAMPI DEVONO CONTENERE ALMENO UN 
+CARATTERE PER FAR FUNZIONARE IL BOT, AD
+ESEMPIO IN ASSENZA DI ID BASTA INSERIRE
+UN QUALSIASI NUMERO
