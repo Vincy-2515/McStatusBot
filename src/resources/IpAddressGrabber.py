@@ -1,5 +1,5 @@
 import subprocess
-import src.ConsoleMessagesHandling as MSG
+import resources.ConsoleMessagesHandling as MSG
 
 error_return_string = "non disponibile"
 

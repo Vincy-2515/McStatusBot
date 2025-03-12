@@ -1,5 +1,5 @@
 import tomllib
-from src import ConsoleMessagesHandling as MSG
+from resources import ConsoleMessagesHandling as MSG
 
 BOT_TOML = "Parrot_BOT.toml"
 
@@ -29,7 +29,7 @@ class Settings:
         self.addresses_message_id = toml_dict["discord"]["id"]["message"]["addresses"]
         self.server_status_update_delay = toml_dict["discord"]["server_status_update_delay"]
         self.bot_token = toml_dict["discord"]["bot_token"]
-        
+
         self.max_players = toml_dict["minecraft"]["max_players"]
         self.latest_log_path = toml_dict["minecraft"]["path"]["latest_log"]
 

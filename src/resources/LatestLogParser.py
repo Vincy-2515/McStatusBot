@@ -1,4 +1,4 @@
-import src.ConsoleMessagesHandling as MSG
+import resources.ConsoleMessagesHandling as MSG
 
 def parseLatestLogForServerStatus(path: str) -> str:
     i: int = 0

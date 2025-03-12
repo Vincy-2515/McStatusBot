@@ -4,9 +4,9 @@ import discord
 from discord.ext import commands
 from discord.ext import tasks
 import GetValues
-import src.LatestLogParser as MCLOG
-import src.IpAddressGrabber as IP
-import src.ConsoleMessagesHandling as MSG
+import resources.LatestLogParser as MCLOG
+import resources.IpAddressGrabber as IP
+import resources.ConsoleMessagesHandling as MSG
 
 try:
     settings = GetValues.Settings()

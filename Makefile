@@ -5,7 +5,7 @@ FILE_SETTINGS =--add-data Parrot_BOT_settings.txt:Parrot_BOT
 FILE_ICON =--icon src/resources/images/parrot-trapping-wasabi.ico
 FLAGS =--onefile --debug all --console --distpath ./ $(FILE_NAME) $(FILE_VERSION) $(FILE_SETTINGS) $(FILE_ICON)
 
-FILES = main.py GetValues.py src/ConsoleMessagesHandling.py src/IpAddressGrabber.py src/LatestLogParser.py
+FILES = src/main.py src/GetValues.py src/resources/ConsoleMessagesHandling.py src/resources/IpAddressGrabber.py src/resources/LatestLogParser.py
 SEPARATOR = ------------------------------------------------------------------------------------------
 .PHONY = clean_all build_clean
 
