@@ -40,7 +40,7 @@ class Client(commands.Bot):
         self.tree.copy_global_to(guild=GUILD_ID)
         self.updateServerStatusEmbed.start()
 
-    @tasks.loop(seconds=settings.updateServerStatusEmbed_task_delay)
+    @tasks.loop(seconds=settings.server_status_update_delay)
     async def updateServerStatusEmbed(self):
 
         try:
@@ -122,7 +122,8 @@ async def sendstatus(interaction: discord.Interaction):
     MSG.printINFO(f'"/sendstatus" invoked by {interaction.user}')
     await interaction.response.defer(thinking=True)
 
-    server_status = MCLOG.parseLatestLogForServerStatus(settings.latest_log_path)
+    server_status = MCLOG.parseLatestLogForServerStatus(
+        settings.latest_log_path)
     player_count = MCLOG.parseLatestLogForPlayerCount(settings.latest_log_path)
 
     server_status_embed = getServerStatusEmbed(server_status, player_count)
