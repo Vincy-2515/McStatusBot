@@ -75,10 +75,10 @@ class Client(commands.Bot):
             previous_message = await getMessage(
                 settings.channel_id, settings.addresses_message_id
             )
-            addresses_embed = await getAddressesEmbed()
+            addresses_embed = getAddressesEmbed()
 
             if previous_message is not None:
-                previous_message.edit(embed=addresses_embed)
+                await previous_message.edit(embed=addresses_embed)
         elif self.server_status == "🔴 Offline" and self.after_online == True:
             sys.exit(0)
 
