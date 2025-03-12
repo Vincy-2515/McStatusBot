@@ -10,23 +10,25 @@ SEPARATOR = --------------------------------------------------------------------
 .PHONY = clean_all build_clean
 
 clean_all: # C:\msys64\ucrt64\bin\mingw32-make.exe clean_all
-	powershell Remove-Item -r "*.exe" -Erroraction silentlycontinue
-	powershell Remove-Item -r "*.spec" -Erroraction silentlycontinue
-	powershell Remove-Item -r "dist/*" -Erroraction silentlycontinue
-	powershell Remove-Item -r "build/*" -Erroraction silentlycontinue
-	powershell Remove-Item -r "__pycache__" -Erroraction silentlycontinue
-	powershell Remove-Item -r ".pytest_cache" -Erroraction silentlycontinue
+	-powershell Remove-Item -r "*.exe" -ErrorAction SilentlyContinue
+	-powershell Remove-Item -r "*.spec" -ErrorAction SilentlyContinue
+	-powershell Remove-Item -r "build/*" -ErrorAction SilentlyContinue
+	-powershell Remove-Item -r "__pycache__" -ErrorAction SilentlyContinue
+	-powershell Remove-Item -r ".pytest_cache" -ErrorAction SilentlyContinue
+	@echo $(SEPARATOR)
 	@echo Removed all the generated files
-	$(SEPARATOR)
+	@echo $(SEPARATOR)
 
 build_clean:
 	$(PYINST) $(FILES) $(FLAGS) --clean
 	powershell Remove-Item -r "*.spec"
+	@echo $(SEPARATOR)
 	@echo Cleaned the cache
-	$(SEPARATOR)
+	@echo $(SEPARATOR)
 
 build:
 	$(PYINST) $(FILES) $(FLAGS)
+	@echo $(SEPARATOR)
 	@echo Successfully created the executable file
-	$(SEPARATOR)
+	@echo $(SEPARATOR)
 	

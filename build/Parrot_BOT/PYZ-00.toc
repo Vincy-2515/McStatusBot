@@ -1,2 +1,0 @@
-('C:\\Users\\vince\\Desktop\\Code\\Python\\parrotBOT\\build\\Parrot_BOT\\PYZ-00.pyz',
- [])
