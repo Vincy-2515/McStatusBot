@@ -6,14 +6,15 @@ BOT_TOML = "Parrot_BOT.toml"
 
 class Settings:
     def __init__(self):
-        self.server_id: int
-        self.channel_id: int
-        self.server_status_message_id: int
-        self.addresses_message_id: int
-        self.server_status_update_delay: int
         self.bot_token: str
+        self.serverStatus_update_delay: int
+        self.id_server: int
+        self.id_channel: int
+        self.id_message_serverStatus: int
+        self.id_message_addresses: int
+        self.path_embed_image: str
         self.max_players: int
-        self.latest_log_path: str
+        self.path_latest_log: str
 
     def updateValues(self):
         try:
@@ -23,25 +24,26 @@ class Settings:
             MSG.printERROR(f"could not open {BOT_TOML}: {e}")
             return
 
-        self.server_id = toml_dict["discord"]["id"]["server"]
-        self.channel_id = toml_dict["discord"]["id"]["channel"]
-        self.server_status_message_id = toml_dict["discord"]["id"]["message"]["server_status"]
-        self.addresses_message_id = toml_dict["discord"]["id"]["message"]["addresses"]
-        self.server_status_update_delay = toml_dict["discord"]["server_status_update_delay"]
         self.bot_token = toml_dict["discord"]["bot_token"]
-
+        self.serverStatus_update_delay = toml_dict["discord"]["serverStatus_update_delay"]
+        self.id_server = toml_dict["discord"]["id"]["server"]
+        self.id_channel = toml_dict["discord"]["id"]["channel"]
+        self.id_message_serverStatus = toml_dict["discord"]["id"]["message"]["server_status"]
+        self.id_message_addresses = toml_dict["discord"]["id"]["message"]["addresses"]
+        self.path_embed_image = toml_dict["discord"]["path"]["embed_image"]
         self.max_players = toml_dict["minecraft"]["max_players"]
-        self.latest_log_path = toml_dict["minecraft"]["path"]["latest_log"]
+        self.path_latest_log = toml_dict["minecraft"]["path"]["latest_log"]
 
 
 if __name__ == "__main__":
     values = Settings()
     values.updateValues()
-    print(values.server_id)
-    print(values.channel_id)
-    print(values.server_status_message_id)
-    print(values.addresses_message_id)
-    print(values.server_status_update_delay)
     print(values.bot_token)
+    print(values.serverStatus_update_delay)
+    print(values.id_server)
+    print(values.id_channel)
+    print(values.id_message_serverStatus)
+    print(values.id_message_addresses)
+    print(values.path_embed_image)
     print(values.max_players)
-    print(values.latest_log_path)
+    print(values.path_latest_log)

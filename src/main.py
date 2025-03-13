@@ -15,7 +15,7 @@ except Exception as e:
     MSG.printERROR(f"failed the collection of the settings from the file: {e}")
 
 DATETIME_FORMAT = "%H:%M:%S %d.%m.%Y "
-GUILD_ID = discord.Object(id=settings.server_id)
+GUILD_ID = discord.Object(id=settings.id_server)
 
 
 class Client(commands.Bot):
@@ -40,24 +40,21 @@ class Client(commands.Bot):
         self.tree.copy_global_to(guild=GUILD_ID)
         self.updateServerStatusEmbed.start()
 
-    @tasks.loop(seconds=settings.server_status_update_delay)
+    @tasks.loop(seconds=settings.serverStatus_update_delay)
     async def updateServerStatusEmbed(self):
 
         try:
-            channel = self.get_channel(settings.channel_id)
-            previous_message = await channel.fetch_message(
-                settings.server_status_message_id
-            )
+            previous_message: discord.Message = await getMessage(settings.id_channel, settings.id_message_serverStatus)
             self.player_count = MCLOG.parseLatestLogForPlayerCount(
-                settings.latest_log_path
+                settings.path_latest_log
             )
             self.server_status = MCLOG.parseLatestLogForServerStatus(
-                settings.latest_log_path
+                settings.path_latest_log
             )
-            server_status_embed = getServerStatusEmbed(
+            image, server_status_embed = getServerStatusEmbed(
                 self.server_status, self.player_count
             )
-            await previous_message.edit(embed=server_status_embed)
+            await previous_message.edit(attachments=[image], embed=server_status_embed)
             MSG.printINFO(
                 f'"server_status_embed" updated, server {self.server_status} with {self.player_count} players'
             )
@@ -73,7 +70,7 @@ class Client(commands.Bot):
             self.after_online = True
 
             previous_message = await getMessage(
-                settings.channel_id, settings.addresses_message_id
+                settings.id_channel, settings.id_message_addresses
             )
             addresses_embed = getAddressesEmbed()
 
@@ -92,7 +89,7 @@ intents.message_content = True
 client = Client(command_prefix="/", intents=intents)
 
 
-### commands #########################################################################################################
+### commands ##############################################################################
 
 
 @client.tree.command(
@@ -102,7 +99,7 @@ async def sendaddresses(interaction: discord.Interaction):
     MSG.printINFO(f'"/sendaddresses" invoked by {interaction.user}')
     await interaction.response.defer()
     previous_message: discord.Message = await getMessage(
-        settings.channel_id, settings.addresses_message_id
+        settings.id_channel, settings.id_message_addresses
     )
     addresses_embed: discord.Embed = getAddressesEmbed()
 
@@ -123,15 +120,15 @@ async def sendstatus(interaction: discord.Interaction):
     await interaction.response.defer(thinking=True)
 
     server_status = MCLOG.parseLatestLogForServerStatus(
-        settings.latest_log_path)
-    player_count = MCLOG.parseLatestLogForPlayerCount(settings.latest_log_path)
+        settings.path_latest_log)
+    player_count = MCLOG.parseLatestLogForPlayerCount(settings.path_latest_log)
 
-    server_status_embed = getServerStatusEmbed(server_status, player_count)
+    file, server_status_embed = getServerStatusEmbed(
+        server_status, player_count)
+    await interaction.followup.send(file=file, embed=server_status_embed)
 
-    await interaction.followup.send(embed=server_status_embed)
 
-
-### other functions ##################################################################################################
+### other functions #######################################################################
 
 
 def getAddressesEmbed() -> discord.Embed:
@@ -155,7 +152,7 @@ def getAddressesEmbed() -> discord.Embed:
     )
     addresses_embed.add_field(
         name="Indirizzo e4mc:",
-        value=f"||{MCLOG.parseLatestLogE4MCAddress(settings.latest_log_path)}||",
+        value=f"||{MCLOG.parseLatestLogE4MCAddress(settings.path_latest_log)}||",
         inline=False,
     )
     addresses_embed.set_footer(text=f"ultimo aggiornamento: {current_time}")
@@ -163,7 +160,19 @@ def getAddressesEmbed() -> discord.Embed:
     return addresses_embed
 
 
-def getServerStatusEmbed(server_status: str, player_count: int) -> discord.Embed:
+"""
+    file = discord.File("path/to/my/image.png", filename="image.png")
+    embed = discord.Embed()
+    embed.set_image(url="attachment://image.png")
+    await channel.send(file=file, embed=embed)
+"""
+
+
+def getServerStatusEmbed(server_status: str, player_count: int) -> discord.File | discord.Embed:
+    splitted_path = settings.path_embed_image.split("/")
+    imagename = splitted_path[len(splitted_path)-1]
+    image = discord.File(settings.path_embed_image, filename=imagename)
+
     server_status_embed = discord.Embed(
         title="parrot-trapping-wasabi", colour=discord.Color.green()
     )
@@ -176,22 +185,23 @@ def getServerStatusEmbed(server_status: str, player_count: int) -> discord.Embed
         server_status_embed.add_field(
             name="Players online:", value=f"{player_count}/{settings.max_players}"
         )
+    server_status_embed.set_image(url=f"attachment://{imagename}")
     server_status_embed.set_footer(text=f"ultimo avvio: {client.startup_time}")
 
-    return server_status_embed
+    return [image, server_status_embed]
 
 
-async def getMessage(channel_id: int, message_id: int) -> discord.Message:
-    channel = client.get_channel(channel_id)
+async def getMessage(id_channel: int, id_message: int) -> discord.Message:
+    channel = client.get_channel(id_channel)
 
     try:
         if channel is not None:
             try:
-                return await channel.fetch_message(message_id)
+                return await channel.fetch_message(id_message)
             except Exception as e:
                 MSG.printERROR(f"Unable to fetch the message: {e}")
     except Exception as e:
-        MSG.printERROR(f'Error with "channel_id": {e}')
+        MSG.printERROR(f'Error with "id_channel": {e}')
         return None
 
     return None
