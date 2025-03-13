@@ -46,27 +46,17 @@ class Client(commands.Bot):
     async def updateServerStatus(self):
         self.server_status = MCLOG.parseLatestLogForServerStatus(settings.path_latest_log)
         self.player_count = MCLOG.parseLatestLogForPlayerCount(settings.path_latest_log)
-        
+
         if self.server_status == "🟢 Online" and self.after_online == False:
             now = datetime.now()
             self.startup_time = now.strftime(DATETIME_FORMAT)
             self.after_online = True
 
-            try:
-                previous_message = await getMessage(settings.id_channel, settings.id_message_addresses)
-                addresses_embed = getAddressesEmbed()
-                await previous_message.edit(embed=addresses_embed)
-            except Exception as e:
-                MSG.printERROR(f"could not update the addresses message: {e}")
+            await updateAddressesEmbed()
+            await updateServerStatusEmbed()
 
         elif self.server_status == "🔴 Offline" and self.after_online == True:
-            try:
-                previous_message: discord.Message = await getMessage(settings.id_channel, settings.id_message_serverStatus)
-                image, server_status_embed = getServerStatusEmbed(self.server_status, self.player_count)
-                await previous_message.edit(attachments=[image], embed=server_status_embed)
-                MSG.printINFO(f'"server_status_embed" updated, server {self.server_status} with {self.player_count} players')
-            except Exception as e:
-                MSG.printERROR(f'failed "server_status_embed" update: {e}')
+            await updateServerStatusEmbed()
 
             MSG.printWARNING(f"The sever is offline, {client.user} is now shutting down")
             sys.exit(0)
@@ -74,19 +64,12 @@ class Client(commands.Bot):
     @tasks.loop(seconds=settings.update_delay_serverStatusEmbed)
     async def updateServerStatusEmbed(self):
         if (self.previous_player_count != self.player_count) or (self.previous_server_status != self.server_status):
-            try:
-                previous_message: discord.Message = await getMessage(settings.id_channel, settings.id_message_serverStatus)
-                image, server_status_embed = getServerStatusEmbed(self.server_status, self.player_count)
-                await previous_message.edit(attachments=[image], embed=server_status_embed)
-                MSG.printINFO(f'"server_status_embed" updated, server {self.server_status} with {self.player_count} players')
-            except Exception as e:
-                MSG.printERROR(f'failed "server_status_embed" update: {e}')
-                
+            await updateServerStatusEmbed()
+            
             self.previous_player_count = self.player_count
             self.previous_server_status = self.server_status
         else:
             MSG.printINFO('"server_status" and "player_count" have not changed, skipping "updateServerStatusEmbed"')
-
 
     @updateServerStatus.before_loop
     async def beforeUpdateServerStatus(self):
@@ -119,7 +102,6 @@ async def sendaddresses(interaction: discord.Interaction):
         MSG.printWARNING(f"couldn't edit the addresses message, sending a new message. Error: {e}")
         await interaction.followup.send(embed=addresses_embed)
         settings.updateSettings()
-        
 
 
 @client.tree.command(name="sendstatus", description="Invia lo stato del server")
@@ -138,11 +120,30 @@ async def sendstatus(interaction: discord.Interaction):
     except Exception as e:
         MSG.printWARNING(f"couldn't edit the server stauts message, sending a new message. Error: {e}")
         await interaction.followup.send(file=image, embed=server_status_embed)
+        MSG.printWARNING("updating settings")
         settings.updateSettings()
-        
 
 
 ### other functions #######################################################################
+
+
+async def updateAddressesEmbed():
+    try:
+        previous_message = await getMessage(settings.id_channel, settings.id_message_addresses)
+        addresses_embed = getAddressesEmbed()
+        await previous_message.edit(embed=addresses_embed)
+    except Exception as e:
+        MSG.printERROR(f"could not update the addresses message: {e}")
+
+
+async def updateServerStatusEmbed():
+    try:
+        previous_message: discord.Message = await getMessage(settings.id_channel, settings.id_message_serverStatus)
+        image, server_status_embed = getServerStatusEmbed(client.server_status, client.player_count)
+        await previous_message.edit(attachments=[image], embed=server_status_embed)
+        MSG.printINFO(f'"server_status_embed" updated, server {client.server_status} with {client.player_count} players')
+    except Exception as e:
+        MSG.printERROR(f'failed "server_status_embed" update: {e}')
 
 
 def getAddressesEmbed() -> discord.Embed:
