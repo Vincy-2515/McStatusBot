@@ -7,30 +7,34 @@ BOT_TOML = "Parrot_BOT.toml"
 class Settings:
     def __init__(self):
         self.bot_token: str
-        self.serverStatus_update_delay: int
+        self.path_embed_image: str
+        self.update_delay_serverStatus: int
+        self.update_delay_serverStatusEmbed: int
         self.id_server: int
         self.id_channel: int
         self.id_message_serverStatus: int
         self.id_message_addresses: int
-        self.path_embed_image: str
         self.max_players: int
         self.path_latest_log: str
+        self.updateSettings()
 
-    def updateValues(self):
+    def updateSettings(self):
         try:
             file = open(BOT_TOML, "rb")
             toml_dict: dict = tomllib.load(file)
+            MSG.printINFO(f"updating settings from {BOT_TOML}")
         except Exception as e:
             MSG.printERROR(f"could not open {BOT_TOML}: {e}")
             return
 
         self.bot_token = toml_dict["discord"]["bot_token"]
-        self.serverStatus_update_delay = toml_dict["discord"]["serverStatus_update_delay"]
+        self.path_embed_image = toml_dict["discord"]["path"]["embed_image"]
+        self.update_delay_serverStatus = toml_dict["discord"]["update_delay"]["serverStatus"]
+        self.update_delay_serverStatusEmbed = toml_dict["discord"]["update_delay"]["serverStatusEmbed"]
         self.id_server = toml_dict["discord"]["id"]["server"]
         self.id_channel = toml_dict["discord"]["id"]["channel"]
         self.id_message_serverStatus = toml_dict["discord"]["id"]["message"]["server_status"]
         self.id_message_addresses = toml_dict["discord"]["id"]["message"]["addresses"]
-        self.path_embed_image = toml_dict["discord"]["path"]["embed_image"]
         self.max_players = toml_dict["minecraft"]["max_players"]
         self.path_latest_log = toml_dict["minecraft"]["path"]["latest_log"]
 
