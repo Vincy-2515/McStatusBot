@@ -29,9 +29,9 @@ class Client(commands.Bot):
         self.previous_player_count: int = 0
         self.previous_server_status: str = ""
 
-        self.ethernet_address: str = "non disponibile"
-        self.hamachi_address: str = "non disponibile"
-        self.e4mc_address: str = "non disponibile"
+        self.ethernet_address: str = None
+        self.hamachi_address: str = None
+        self.e4mc_address: str = None
 
     async def on_ready(self):
         MSG.printINFO(f"logged in as {client.user} (ID: {client.user.id})")
@@ -64,9 +64,9 @@ class Client(commands.Bot):
             self.updateServerStatusEmbed.start()
 
         elif self.server_status == "🔴 Offline" and self.after_online == True:
-            self.ethernet_address: str = "non disponibile"
-            self.hamachi_address: str = "non disponibile"
-            self.e4mc_address: str = "non disponibile"
+            self.ethernet_address: str = None
+            self.hamachi_address: str = None
+            self.e4mc_address: str = None
 
             await updateServerStatusEmbed()
 
@@ -190,24 +190,24 @@ def getServerStatusEmbed(server_status: str, player_count: int) -> discord.File 
 
     # indirizzi
     if (
-        client.ethernet_address != "non disponibile"
-        or client.e4mc_address != "non disponibile"
-        or client.hamachi_address != "non disponibile"
+        client.ethernet_address != None
+        or client.e4mc_address != None
+        or client.hamachi_address != None
     ):
         server_status_embed.add_field(name="Indirizzi per la connessione:", value="", inline=False)
-    if client.ethernet_address != "non disponibile":
+    if client.ethernet_address != None:
         server_status_embed.add_field(
             name="",
             value=f"*Indirizzo locale:*||```{client.ethernet_address}```||",
             inline=False,
         )
-    if client.e4mc_address != "non disponibile":
+    if client.e4mc_address != None:
         server_status_embed.add_field(
             name="",
             value=f"*Indirizzo e4mc:*||```{client.e4mc_address}```||",
             inline=False,
         )
-    if client.hamachi_address != "non disponibile":
+    if client.hamachi_address != None:
         server_status_embed.add_field(
             name="",
             value=f"*Indirizzo Hamachi:*||```{client.hamachi_address}```||",

@@ -1,8 +1,6 @@
 import subprocess
 import resources.ConsoleMessagesHandling as MSG
 
-error_return_string = "non disponibile"
-
 
 def ipAddressGrabber(net_card):
     ip_address = ""
@@ -11,7 +9,7 @@ def ipAddressGrabber(net_card):
 
     if stdout.returncode != 0:
         MSG.printERROR(f'"Get-NetIPAddress" failed for "{net_card}"')
-        return error_return_string
+        return None
     else:
         MSG.printINFO(f'"Get-NetIPAddress" successful for "{net_card}"')
         decoded_stdout = stdout.stdout.decode()
@@ -28,7 +26,7 @@ def ipAddressGrabber(net_card):
 
     if ip_address == "":
         MSG.printERROR(f'Failed to obtain {net_card} address from the "Get-NetIPAddress" output')
-        return error_return_string
+        return None
     else:
         MSG.printINFO(f'Successfully obtained {net_card} address from the "Get-NetIPAddress" output')
         ip_address += ":25565"

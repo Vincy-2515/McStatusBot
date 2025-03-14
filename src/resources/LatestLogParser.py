@@ -68,7 +68,7 @@ def parseLatestLogForE4MCAddress(path: str) -> str:
 
     if e4mc_address == "":
         MSG.printERROR("Failed to obtain the e4mc address")
-        return "-- non disponibile --"
+        return None
 
     MSG.printINFO("Successfully obtained the e4mc address")
 
