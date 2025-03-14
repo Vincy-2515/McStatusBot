@@ -56,7 +56,7 @@ class Client(commands.Bot):
             now = datetime.now()
             self.startup_time = now.strftime(DATETIME_FORMAT)
             self.after_online = True
-            
+
             self.ethernet_address = IP.ipAddressGrabber("Ethernet")
             self.hamachi_address = IP.ipAddressGrabber("Hamachi")
             self.e4mc_address = MCLOG.parseLatestLogForE4MCAddress(settings.path_latest_log)
@@ -64,6 +64,10 @@ class Client(commands.Bot):
             self.updateServerStatusEmbed.start()
 
         elif self.server_status == "🔴 Offline" and self.after_online == True:
+            self.ethernet_address: str = "non disponibile"
+            self.hamachi_address: str = "non disponibile"
+            self.e4mc_address: str = "non disponibile"
+
             await updateServerStatusEmbed()
 
             MSG.printWARNING(f"The sever is offline, {client.user} is now shutting down")
@@ -90,7 +94,7 @@ class Client(commands.Bot):
 
 intents = discord.Intents.default()
 intents.message_content = True
-client = Client(command_prefix="/", intents=intents) 
+client = Client(command_prefix="/", intents=intents)
 
 
 ### commands ##############################################################################
@@ -185,7 +189,12 @@ def getServerStatusEmbed(server_status: str, player_count: int) -> discord.File 
     server_status_embed.add_field(name="", value="")
 
     # indirizzi
-    server_status_embed.add_field(name="Indirizzi per la connessione:", value="", inline=False)
+    if (
+        client.ethernet_address != "non disponibile"
+        or client.e4mc_address != "non disponibile"
+        or client.hamachi_address != "non disponibile"
+    ):
+        server_status_embed.add_field(name="Indirizzi per la connessione:", value="", inline=False)
     if client.ethernet_address != "non disponibile":
         server_status_embed.add_field(
             name="",
