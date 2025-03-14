@@ -13,7 +13,6 @@ class Settings:
         self.id_server: int
         self.id_channel: int
         self.id_message_serverStatus: int
-        self.id_message_addresses: int
         self.max_players: int
         self.path_latest_log: str
         self.updateSettings()
@@ -34,20 +33,18 @@ class Settings:
         self.id_server = toml_dict["discord"]["id"]["server"]
         self.id_channel = toml_dict["discord"]["id"]["channel"]
         self.id_message_serverStatus = toml_dict["discord"]["id"]["message"]["server_status"]
-        self.id_message_addresses = toml_dict["discord"]["id"]["message"]["addresses"]
         self.max_players = toml_dict["minecraft"]["max_players"]
         self.path_latest_log = toml_dict["minecraft"]["path"]["latest_log"]
 
 
 if __name__ == "__main__":
     values = Settings()
-    values.updateValues()
     print(values.bot_token)
-    print(values.serverStatus_update_delay)
+    print(values.path_embed_image)
+    print(values.update_delay_serverStatus)
+    print(values.update_delay_serverStatusEmbed)
     print(values.id_server)
     print(values.id_channel)
     print(values.id_message_serverStatus)
-    print(values.id_message_addresses)
-    print(values.path_embed_image)
     print(values.max_players)
     print(values.path_latest_log)

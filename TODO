@@ -1,5 +1,6 @@
 + aggiungere immagine nell'embed
 + modificare il comando get status in modo tale da modificare un messaggio se già esistente
-> migliorare la struttura del progetto
+> unire i due embed in uno solo
 > leggere il numero di players direttamente da "server.properties"
+> migliorare la struttura del progetto
 > enjoy

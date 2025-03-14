@@ -48,7 +48,7 @@ def parseLatestLogForPlayerCount(path: str) -> int:
     return player_count
 
 
-def parseLatestLogE4MCAddress(path: str) -> str:
+def parseLatestLogForE4MCAddress(path: str) -> str:
     splitted_current_line: str = ""
     e4mc_address: str = ""
 
@@ -79,7 +79,7 @@ if __name__ == "__main__":
     path = "src\\resources\\logs\\latest.log"
     server_status = parseLatestLogForServerStatus(path)
     player_count = parseLatestLogForPlayerCount(path)
-    e4mc_address = parseLatestLogE4MCAddress(path)
+    e4mc_address = parseLatestLogForE4MCAddress(path)
     print(f"Srver Online?: {server_status}")
     print(f"Players: {player_count}")
     print(f"e4mc_address: {e4mc_address}")
