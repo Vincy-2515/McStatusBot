@@ -1,1 +1,1 @@
-start "Parrot_BOT.exe" Parrot_BOT.exe
+start Parrot_BOT.bat
