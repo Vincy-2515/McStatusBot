@@ -1,3 +1,4 @@
+@echo off
 ::All'avvio di questo .bat:
 ::  - nessun parametro: console visibile, nessun log salvato
 ::  - noconsole: console invisibile, log salvato allo spegnimento del bot
