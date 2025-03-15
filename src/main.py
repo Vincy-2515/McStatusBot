@@ -13,7 +13,7 @@ try:
 except Exception as e:
     MSG.printERROR(f"failed the collection of the settings from the file: {e}")
 
-DATETIME_FORMAT = "%H:%M:%S %d.%m.%Y "
+DATETIME_FORMAT = "%H:%M:%S • %d-%m-%Y"
 GUILD_ID = discord.Object(id=settings.id_server)
 
 
