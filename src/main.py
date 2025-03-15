@@ -4,13 +4,13 @@ import sys
 import discord
 from discord.ext import commands
 from discord.ext import tasks
-import GetValues
+import GetSettings
 import resources.LatestLogParser as MCLOG
 import resources.IpAddressGrabber as IP
 import resources.ConsoleMessagesHandling as MSG
 
 try:
-    settings = GetValues.Settings()
+    settings = GetSettings.Settings()
 except Exception as e:
     MSG.printERROR(f"failed the collection of the settings from the file: {e}")
 
@@ -104,7 +104,9 @@ client = Client(command_prefix="/", intents=intents)
     name="sendstatus", description="Invia un embed contenente lo stato del server e gli indirizzi per la connessione ad esso"
 )
 async def sendstatus(interaction: discord.Interaction):
-    MSG.printINFO(f'"/sendstatus" invoked by {interaction.user}')
+    if await handleCommandInvocation(interaction=interaction, command_name="sendstatus", admin_only_command=True) == False:
+        return
+
     await interaction.response.defer(thinking=True)
 
     server_status: str = MCLOG.parseLatestLogForServerStatus(settings.path_latest_log)
@@ -123,7 +125,9 @@ async def sendstatus(interaction: discord.Interaction):
 
 @client.tree.command(name="reloaddata", description="Ricarica tutti i dati che il bot raccoglie da vari files")
 async def reloaddata(interaction: discord.Interaction):
-    MSG.printINFO(f'"/reloaddata" invoked by {interaction.user}')
+    if await handleCommandInvocation(interaction=interaction, command_name="reloaddata", admin_only_command=True) == False:
+        return
+
     await interaction.response.defer(thinking=True)
 
     try:
@@ -189,11 +193,7 @@ def getServerStatusEmbed(server_status: str, player_count: int) -> discord.File 
     server_status_embed.add_field(name="", value="")
 
     # indirizzi
-    if (
-        client.ethernet_address != None
-        or client.e4mc_address != None
-        or client.hamachi_address != None
-    ):
+    if client.ethernet_address != None or client.e4mc_address != None or client.hamachi_address != None:
         server_status_embed.add_field(name="Indirizzi per la connessione:", value="", inline=False)
     if client.ethernet_address != None:
         server_status_embed.add_field(
@@ -218,6 +218,15 @@ def getServerStatusEmbed(server_status: str, player_count: int) -> discord.File 
     server_status_embed.set_footer(text=f"ultimo avvio: {client.startup_time}")
 
     return [image, server_status_embed]
+
+
+async def handleCommandInvocation(interaction: discord.Interaction, command_name: str, admin_only_command: bool) -> bool:
+    MSG.printINFO(f'"/{command_name}" invoked by {interaction.user}')
+
+    if (str(interaction.user) not in settings.server_admins) and (admin_only_command == True):
+        await interaction.response.send_message("Non puoi eseguire questo comando")
+        return False
+    return True
 
 
 client.run(settings.bot_token)

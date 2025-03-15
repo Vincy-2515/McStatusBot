@@ -7,6 +7,7 @@ BOT_TOML = "Parrot_BOT.toml"
 class Settings:
     def __init__(self):
         self.bot_token: str
+        self.server_admins: str
         self.path_embed_image: str
         self.update_delay_serverStatus: int
         self.update_delay_serverStatusEmbed: int
@@ -27,6 +28,7 @@ class Settings:
             return
 
         self.bot_token = toml_dict["discord"]["bot_token"]
+        self.server_admins = toml_dict["discord"]["server"]["admins"]
         self.path_embed_image = toml_dict["discord"]["path"]["embed_image"]
         self.update_delay_serverStatus = toml_dict["discord"]["update_delay"]["serverStatus"]
         self.update_delay_serverStatusEmbed = toml_dict["discord"]["update_delay"]["serverStatusEmbed"]
@@ -38,13 +40,17 @@ class Settings:
 
 
 if __name__ == "__main__":
-    values = Settings()
-    print(values.bot_token)
-    print(values.path_embed_image)
-    print(values.update_delay_serverStatus)
-    print(values.update_delay_serverStatusEmbed)
-    print(values.id_server)
-    print(values.id_channel)
-    print(values.id_message_serverStatus)
-    print(values.max_players)
-    print(values.path_latest_log)
+    settings = Settings()
+    print(settings.bot_token)
+    print(settings.server_admins)
+    print(settings.path_embed_image)
+    print(settings.update_delay_serverStatus)
+    print(settings.update_delay_serverStatusEmbed)
+    print(settings.id_server)
+    print(settings.id_channel)
+    print(settings.id_message_serverStatus)
+    print(settings.max_players)
+    print(settings.path_latest_log)
+
+    if "zac_oo1" in settings.server_admins:
+        print("yes")
