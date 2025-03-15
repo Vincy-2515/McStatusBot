@@ -45,10 +45,10 @@ class Client(commands.Bot):
 
     async def setup_hook(self) -> None:
         self.tree.copy_global_to(guild=GUILD_ID)
-        self.updateServerStatusLocally.start()
+        self.updateServerStatus.start()
 
-    @tasks.loop(seconds=settings.update_delay_serverStatus)
-    async def updateServerStatusLocally(self):
+    @tasks.loop(seconds=settings.serverStatus_update_delay)
+    async def updateServerStatus(self):
         self.server_status = MCLOG.parseLatestLogForServerStatus(settings.path_latest_log)
         self.player_count = MCLOG.parseLatestLogForPlayerCount(settings.path_latest_log)
 
@@ -61,7 +61,10 @@ class Client(commands.Bot):
             self.hamachi_address = IP.ipAddressGrabber("Hamachi")
             self.e4mc_address = MCLOG.parseLatestLogForE4MCAddress(settings.path_latest_log)
 
-            self.updateServerStatusEmbed.start()
+            await updateServerStatusEmbed()
+
+            self.previous_player_count = self.player_count
+            self.previous_server_status = self.server_status
 
         elif self.server_status == "🔴 Offline" and self.after_online == True:
             self.ethernet_address: str = None
@@ -73,22 +76,17 @@ class Client(commands.Bot):
             MSG.printWARNING(f"The sever is offline, {client.user} is now shutting down")
             sys.exit(0)
 
-    @tasks.loop(seconds=settings.update_delay_serverStatusEmbed)
-    async def updateServerStatusEmbed(self):
-        if (self.previous_player_count != self.player_count) or (self.previous_server_status != self.server_status):
+        elif (self.previous_player_count != self.player_count) or (self.previous_server_status != self.server_status):
             await updateServerStatusEmbed()
 
             self.previous_player_count = self.player_count
             self.previous_server_status = self.server_status
+
         else:
             MSG.printINFO('"server_status" and "player_count" have not changed, skipping "updateServerStatusEmbed"')
 
-    @updateServerStatusLocally.before_loop
+    @updateServerStatus.before_loop
     async def beforeUpdateServerStatus(self):
-        await self.wait_until_ready()
-
-    @updateServerStatusEmbed.before_loop
-    async def beforeUpdateServerStatusEmbed(self):
         await self.wait_until_ready()
 
 
@@ -139,6 +137,9 @@ async def reloaddata(interaction: discord.Interaction):
 
         client.server_status = MCLOG.parseLatestLogForServerStatus(settings.path_latest_log)
         client.player_count = MCLOG.parseLatestLogForPlayerCount(settings.path_latest_log)
+
+        await updateServerStatusEmbed()
+
         MSG.printINFO("All data and settings are reloaded")
         await interaction.followup.send("Dati e impostazioni ricaricati")
     except Exception as e:
