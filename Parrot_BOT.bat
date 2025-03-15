@@ -1,9 +1,14 @@
-::Avviare questo file bat con: start Parrot_BOT.bat
+::All'avvio di questo .bat:
+::  - nessun parametro: console visibile, nessun log salvato
+::  - noconsole: console invisibile, log salvato allo spegnimento del bot
 
-::OPZIONE 1: console visibile, nessun log salvato
-::start "Parrot_BOT.exe" Parrot_BOT.exe
-
-::OPZIONE 2: console invisibile, log aggiornato allo spegnimento del bot
-echo Set WshShell = CreateObject("WScript.Shell") > "%temp%\run_invisible.vbs" && echo WshShell.Run "cmd /c Parrot_BOT.exe > Parrot_BOT.log 2>&1", 0, False >> "%temp%\run_invisible.vbs" && cscript //nologo "%temp%\run_invisible.vbs" && del "%temp%\run_invisible.vbs"
+IF "%1"=="noconsole" (
+    powershell Start-Process -FilePath "Parrot_BOT.exe" -RedirectStandardOutput "Parrot_BOT.log" -WindowStyle Hidden
+) ELSE IF "%1"=="" (
+    powershell Start-Process -FilePath "Parrot_BOT.exe" -WindowStyle Normal
+) ELSE (
+    echo Parametro "%1" non valido!
+    pause
+)
 
 exit

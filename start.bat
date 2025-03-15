@@ -1,1 +1,1 @@
-start Parrot_BOT.bat
+start Parrot_BOT.bat noconsole
