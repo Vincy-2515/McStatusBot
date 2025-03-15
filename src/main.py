@@ -1,5 +1,4 @@
 from datetime import datetime
-import pyperclip
 import sys
 import discord
 from discord.ext import commands
