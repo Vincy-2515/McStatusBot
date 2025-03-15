@@ -188,7 +188,7 @@ def getServerStatusEmbed(server_status: str, player_count: int) -> discord.File 
     if server_status == "🔴 Offline":
         server_status_embed.add_field(name="Players online:", value=f"0/{settings.max_players}")
     else:
-        server_status_embed.add_field(name="Players online:", value=f"{player_count}/{settings.max_players}")
+        server_status_embed.add_field(name="Players online:", value=f"<:steve:1350430296612540480> {player_count}/{settings.max_players}")
 
     server_status_embed.add_field(name="", value="")
 
@@ -198,19 +198,19 @@ def getServerStatusEmbed(server_status: str, player_count: int) -> discord.File 
     if client.ethernet_address != None:
         server_status_embed.add_field(
             name="",
-            value=f"*Indirizzo locale:*||```{client.ethernet_address}```||",
+            value=f"* __Indirizzo locale:__||```{client.ethernet_address}```||",
             inline=False,
         )
     if client.e4mc_address != None:
         server_status_embed.add_field(
             name="",
-            value=f"*Indirizzo e4mc:*||```{client.e4mc_address}```||",
+            value=f"* __Indirizzo e4mc:__||```{client.e4mc_address}```||",
             inline=False,
         )
     if client.hamachi_address != None:
         server_status_embed.add_field(
             name="",
-            value=f"*Indirizzo Hamachi:*||```{client.hamachi_address}```||",
+            value=f"* __Indirizzo Hamachi:__||```{client.hamachi_address}```||",
             inline=False,
         )
 
