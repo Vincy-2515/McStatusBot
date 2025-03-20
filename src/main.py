@@ -27,6 +27,7 @@ class Client(commands.Bot):
         self.server_status: str = ""
         self.previous_player_count: int = 0
         self.previous_server_status: str = ""
+        self.cycles_count = 0
 
         self.ethernet_address: str = None
         self.hamachi_address: str = None
@@ -64,6 +65,7 @@ class Client(commands.Bot):
 
             self.previous_player_count = self.player_count
             self.previous_server_status = self.server_status
+            self.cycles_count = 0
 
         elif self.server_status == "🔴 Offline" and self.after_online == True:
             self.ethernet_address: str = None
@@ -78,11 +80,14 @@ class Client(commands.Bot):
         elif (self.previous_player_count != self.player_count) or (self.previous_server_status != self.server_status):
             await updateServerStatusEmbed()
 
+            MSG.printINFO(f'values changed, updated "server_status_embed" after {self.cycles_count} cycles')
+
             self.previous_player_count = self.player_count
             self.previous_server_status = self.server_status
+            self.cycles_count = 0
 
         else:
-            MSG.printINFO('"server_status" and "player_count" have not changed, skipping "updateServerStatusEmbed"')
+            self.cycles_count += 1
 
     @updateServerStatus.before_loop
     async def beforeUpdateServerStatus(self):

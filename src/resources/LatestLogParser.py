@@ -22,7 +22,6 @@ def parseLatestLogForServerStatus(path: str) -> str:
         MSG.printERROR("failed to obtain the server status")
         return "🔴 Offline"
 
-    MSG.printINFO("successfully obtained the server status")
     return server_status
 
 
@@ -42,8 +41,6 @@ def parseLatestLogForPlayerCount(path: str) -> int:
                 player_count -= 1
                 break
         i += 1
-
-    MSG.printINFO("obtained the current player count")
 
     return player_count
 
