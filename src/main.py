@@ -52,7 +52,7 @@ class Client(commands.Bot):
         self.server_status = MCLOG.parseLatestLogForServerStatus(settings.path_latest_log)
         self.player_count = MCLOG.parseLatestLogForPlayerCount(settings.path_latest_log)
 
-        if self.server_status == "🟢 Online" and self.after_online == False:
+        if self.server_status == ":green_circle: Online" and self.after_online == False:
             now = datetime.now()
             self.startup_time = now.strftime(DATETIME_FORMAT)
             self.after_online = True
@@ -67,7 +67,7 @@ class Client(commands.Bot):
             self.previous_server_status = self.server_status
             self.cycles_count = 0
 
-        elif self.server_status == "🔴 Offline" and self.after_online == True:
+        elif self.server_status == ":red_circle: Offline" and self.after_online == True:
             self.ethernet_address: str = None
             self.hamachi_address: str = None
             self.e4mc_address: str = None
@@ -190,7 +190,7 @@ def getServerStatusEmbed(server_status: str, player_count: int) -> discord.File 
 
     # stato del server
     server_status_embed.add_field(name="Server Status:", value=server_status)
-    if server_status == "🔴 Offline":
+    if server_status == ":red_circle: Offline":
         server_status_embed.add_field(name="Players online:", value=f"0/{settings.max_players}")
     else:
         server_status_embed.add_field(name="Players online:", value=f"<:steve:1350430296612540480> {player_count}/{settings.max_players}")

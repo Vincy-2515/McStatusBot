@@ -12,15 +12,15 @@ def parseLatestLogForServerStatus(path: str) -> str:
     while i < len(lines):
         if lines[i].find("[Server thread/INFO]") != -1:
             if lines[i].find('For help, type "help"') != -1:
-                server_status = "🟢 Online"
+                server_status = ":green_circle: Online"
             elif lines[i].find("Stopping the server") != -1:
-                server_status = "🔴 Offline"
+                server_status = ":red_circle: Offline"
                 break
         i += 1
 
     if server_status == "":
         MSG.printERROR("failed to obtain the server status")
-        return "🔴 Offline"
+        return ":red_circle: Offline"
 
     return server_status
 
