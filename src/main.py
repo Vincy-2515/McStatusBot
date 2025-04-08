@@ -1,4 +1,4 @@
-from datetime import datetime
+import datetime
 import sys
 import discord
 from discord.ext import commands
@@ -13,14 +13,13 @@ try:
 except Exception as e:
     MSG.printERROR(f"failed the collection of the settings from the file: {e}")
 
-DATETIME_FORMAT = "%H:%M:%S • %d-%m-%Y"
 GUILD_ID = discord.Object(id=settings.id_server)
 
 
 class Client(commands.Bot):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.startup_time: str = ""
+        self.startup_time: datetime.datetime = None
         self.after_online: bool = False
 
         self.player_count: int = 0
@@ -53,8 +52,7 @@ class Client(commands.Bot):
         self.player_count = MCLOG.parseLatestLogForPlayerCount(settings.path_latest_log)
 
         if self.server_status == ":green_circle: Online" and self.after_online == False:
-            now = datetime.now()
-            self.startup_time = now.strftime(DATETIME_FORMAT)
+            self.startup_time = datetime.datetime.now()
             self.after_online = True
 
             self.ethernet_address = IP.ipAddressGrabber("Ethernet")
@@ -186,14 +184,18 @@ def getServerStatusEmbed(server_status: str, player_count: int) -> discord.File 
     imagename = splitted_path[len(splitted_path) - 1]
     image = discord.File(settings.path_embed_image, filename=imagename)
 
-    server_status_embed = discord.Embed(title="parrot-trapping-wasabi", colour=discord.Color.green())
+    server_status_embed = discord.Embed(
+        title="parrot-trapping-wasabi", colour=discord.Color.green(), timestamp=client.startup_time
+    )
 
     # stato del server
     server_status_embed.add_field(name="Server Status:", value=server_status)
     if server_status == ":red_circle: Offline":
         server_status_embed.add_field(name="Players online:", value=f"0/{settings.max_players}")
     else:
-        server_status_embed.add_field(name="Players online:", value=f"<:steve:1350430296612540480> {player_count}/{settings.max_players}")
+        server_status_embed.add_field(
+            name="Players online:", value=f"<:steve:1350430296612540480> {player_count}/{settings.max_players}"
+        )
 
     server_status_embed.add_field(name="", value="")
 
@@ -220,7 +222,7 @@ def getServerStatusEmbed(server_status: str, player_count: int) -> discord.File 
         )
 
     server_status_embed.set_image(url=f"attachment://{imagename}")
-    server_status_embed.set_footer(text=f"ultimo avvio: {client.startup_time}")
+    # server_status_embed.set_footer(text=f"ultimo avvio: {client.startup_time}")
 
     return [image, server_status_embed]
 
