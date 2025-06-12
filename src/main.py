@@ -178,7 +178,7 @@ def getServerStatusEmbed(forced_shutdown: bool = None) -> discord.File | discord
     # stato del server
     server_status_embed.add_field(name="Server Status:", value=client.server_status)
     if client.server_status == ":red_circle: Offline":
-        server_status_embed.add_field(name="Players online:", value=f"0/{settings.max_players}")
+        server_status_embed.add_field(name="Players online:", value=f"<:steve:1382831305221472468> 0/{settings.max_players}")
     else:
         server_status_embed.add_field(
             name="Players online:", value=f"<:steve:1382831305221472468> {client.player_count}/{settings.max_players}"
