@@ -1,11 +1,11 @@
 PYINST = pyinstaller
 
-FILE_NAME =--name Parrot_BOT
-CONFIGS =--add-data Parrot_BOT.toml:Parrot_BOT
-FILE_ICON =--icon src/resources/images/parrot-trapping-wasabi.ico
+FILE_NAME =--name Reforged_BOT
+CONFIGS =--add-data Reforged_BOT.toml:Reforged_BOT
+FILE_ICON =--icon src\resources\images\Reforged.ico
 FLAGS =--onefile --debug all --console --distpath ./ $(FILE_NAME) $(FILE_VERSION) $(CONFIGS) $(FILE_ICON)
 
-FILES = src/main.py src/GetSettings.py src/resources/ConsoleMessagesHandling.py src/resources/IpAddressGrabber.py src/resources/LatestLogParser.py
+FILES = src/main.py src/GetSettings.py src/resources/ConsoleMessagesHandling.py src/resources/LatestLogParser.py
 SEPARATOR = ------------------------------------------------------------------------------------------
 .PHONY = clean_all build_clean
 
