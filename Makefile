@@ -3,11 +3,11 @@ PYINST = pyinstaller
 FILE_NAME =--name Reforged_BOT
 CONFIGS =--add-data Reforged_BOT.toml:Reforged_BOT
 FILE_ICON =--icon src\resources\images\Reforged.ico
-FLAGS =--onefile --debug all --console --distpath ./ $(FILE_NAME) $(FILE_VERSION) $(CONFIGS) $(FILE_ICON)
+FLAGS =--onefile --debug all --console --distpath ./ --paths=.venv\Lib\site-packages $(FILE_NAME) $(FILE_VERSION) $(CONFIGS) $(FILE_ICON)
 
 FILES = src/main.py src/GetSettings.py src/resources/ConsoleMessagesHandling.py src/resources/LatestLogParser.py
 SEPARATOR = ------------------------------------------------------------------------------------------
-.PHONY = clean_all build_clean
+.PHONY = clean_all
 
 clean_all: # C:\msys64\ucrt64\bin\mingw32-make.exe clean_all
 	-powershell Remove-Item -r "*.exe" -ErrorAction SilentlyContinue
@@ -20,6 +20,7 @@ clean_all: # C:\msys64\ucrt64\bin\mingw32-make.exe clean_all
 	@echo $(SEPARATOR)
 
 build_clean:
+	.venv\Scripts\activate
 	$(PYINST) $(FILES) $(FLAGS) --clean
 	powershell Remove-Item -r "*.spec"
 	@echo $(SEPARATOR)
