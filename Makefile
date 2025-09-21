@@ -1,8 +1,10 @@
 PYINST = pyinstaller
 
-FILE_NAME =--name Reforged_BOT
-CONFIGS =--add-data Reforged_BOT.toml:Reforged_BOT
-FILE_ICON =--icon src\resources\images\Reforged.ico
+BOT_NAME =Reworked_BOT
+
+FILE_NAME =--name $(BOT_NAME)
+CONFIGS =--add-data $(BOT_NAME).toml:$(BOT_NAME)
+FILE_ICON =--icon src\resources\images\$(BOT_NAME).ico
 FLAGS =--onefile --debug all --console --distpath ./ --paths=.venv\Lib\site-packages $(FILE_NAME) $(FILE_VERSION) $(CONFIGS) $(FILE_ICON)
 
 FILES = src/main.py src/GetSettings.py src/resources/ConsoleMessagesHandling.py src/resources/LatestLogParser.py

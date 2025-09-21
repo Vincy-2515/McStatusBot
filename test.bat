@@ -1,2 +1,3 @@
-call Reforged_BOT.exe
+set BOT_NAME = "Reworked_BOT"
+call %BOT_NAME%.exe
 pause

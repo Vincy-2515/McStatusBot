@@ -1,7 +1,7 @@
 import tomllib
 from resources import ConsoleMessagesHandling as MSG
 
-BOT_TOML = "Reforged_BOT.toml"
+BOT_TOML = "Reworked_BOT.toml"
 
 
 class Settings:

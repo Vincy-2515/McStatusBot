@@ -149,7 +149,11 @@ async def updateServerStatusEmbed(forced_shutdown: bool = None):
         )  ################################### TROPPO CONSUMO DI TEMPO
         MSG.printINFO(f'"server_status_embed" updated, server {client.server_status} with {client.player_count} players')
     except Exception as e:
+        settings.updateSettings()
         MSG.printERROR(f'failed "server_status_embed" update: {e}')
+        MSG.printINFO('sending a new message')
+        channel:discord.TextChannel = client.get_channel(settings.id_channel)
+        await channel.send(file=image, embed=server_status_embed)
 
 
 async def getMessage(id_channel: int, id_message: int) -> discord.Message:
@@ -173,7 +177,7 @@ def getServerStatusEmbed(forced_shutdown: bool = None) -> discord.File | discord
     imagename = splitted_path[len(splitted_path) - 1]
     image = discord.File(settings.path_embed_image, filename=imagename)
 
-    server_status_embed = discord.Embed(title="Reforged", colour=discord.Color.green(), timestamp=client.startup_time)
+    server_status_embed = discord.Embed(title="Reworked", colour=discord.Color.green(), timestamp=client.startup_time)
 
     # stato del server
     server_status_embed.add_field(name="Server Status:", value=client.server_status)
