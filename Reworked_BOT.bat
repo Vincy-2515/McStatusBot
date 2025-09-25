@@ -1,11 +1,12 @@
 @echo off
 ::All'avvio di questo .bat:
 ::  - nessun parametro: console visibile, nessun log salvato
-::  - noconsole: console invisibile, log salvato allo spegnimento del bot
+::  - "--no-console": console invisibile, log salvato allo spegnimento del bot
 
-set BOT_NAME = "Reworked_BOT"
+::%~n0: is the name of this current file
+set BOT_NAME = %~n0
 
-IF "%1"=="noconsole" (
+IF "%1"=="--no-console" (
     powershell Start-Process -FilePath "%BOT_NAME%.exe" -RedirectStandardOutput "%BOT_NAME%.log" -WindowStyle Hidden
 ) ELSE IF "%1"=="" (
     powershell Start-Process -FilePath "%BOT_NAME%.exe" -WindowStyle Normal
