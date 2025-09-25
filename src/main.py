@@ -1,3 +1,4 @@
+import time
 import datetime
 import sys
 import discord
@@ -13,7 +14,6 @@ except Exception as e:
     MSG.printERROR(f"failed the collection of the settings from the file: {e}")
 
 GUILD_ID = discord.Object(id=settings.id_server)
-
 
 class Client(commands.Bot):
     def __init__(self, *args, **kwargs):
@@ -46,30 +46,28 @@ class Client(commands.Bot):
         self.server_status = MCLOG.parseLatestLogForServerStatus(settings.path_latest_log)
         self.player_count = MCLOG.parseLatestLogForPlayerCount(settings.path_latest_log)
 
-        if self.server_status == ":green_circle: Online" and self.after_online == False:
-            self.startup_time = datetime.datetime.now()
-            self.after_online = True
+        if (self.previous_player_count != self.player_count) or (self.previous_server_status != self.server_status):
+            MSG.printINFO(f'Values have changed after {self.cycles_count} cycles (or {self.cycles_count * settings.serverStatus_update_delay} seconds)')
+
+            if self.server_status == MCLOG.STRING_SERVER_STATUS_ONLINE and self.after_online == False:
+                MSG.printINFO("The server is online")
+
+                self.startup_time = datetime.datetime.now()
+                self.after_online = True
+
+            elif self.server_status == MCLOG.STRING_SERVER_STATUS_STARTING:
+                MSG.printINFO("The server is starting")
+        
+            elif self.server_status == MCLOG.STRING_SERVER_STATUS_OFFLINE and self.after_online == True:
+                MSG.printINFO("The server is offline, starting shutdown procedure...")
+                await shutdown(forced_shutdown=False)
 
             await updateServerStatusEmbed()
-
-            self.previous_player_count = self.player_count
-            self.previous_server_status = self.server_status
-            self.cycles_count = 0
-
-        elif self.server_status == ":red_circle: Offline" and self.after_online == True:
-            await shutdown(forced_shutdown=False)
-
-        elif (self.previous_player_count != self.player_count) or (self.previous_server_status != self.server_status):
-            await updateServerStatusEmbed()
-
-            MSG.printINFO(f'values changed, updated "server_status_embed" after {self.cycles_count} cycles')
-
-            self.previous_player_count = self.player_count
-            self.previous_server_status = self.server_status
-            self.cycles_count = 0
+            updatePreviousValues()
 
         else:
             self.cycles_count += 1
+
 
     @updateServerStatus.before_loop
     async def beforeUpdateServerStatus(self):
@@ -138,8 +136,10 @@ async def shutdownbot(interaction: discord.Interaction):
 
 ### other functions #######################################################################
 
-
 async def updateServerStatusEmbed(forced_shutdown: bool = None):
+    MSG.printINFO('Updating "server_status_embed"...')
+    updateServerStatusEmbed_start_time = time.perf_counter()
+
     try:
         previous_message: discord.Message = await getMessage(settings.id_channel, settings.id_message_serverStatus)
         image, server_status_embed = getServerStatusEmbed(forced_shutdown=forced_shutdown)
@@ -147,14 +147,16 @@ async def updateServerStatusEmbed(forced_shutdown: bool = None):
         await previous_message.edit(
             attachments=[image], embed=server_status_embed
         )  ################################### TROPPO CONSUMO DI TEMPO
-        MSG.printINFO(f'"server_status_embed" updated, server {client.server_status} with {client.player_count} players')
     except Exception as e:
         settings.updateSettings()
         MSG.printERROR(f'failed "server_status_embed" update: {e}')
-        MSG.printINFO('sending a new message')
-        channel:discord.TextChannel = client.get_channel(settings.id_channel)
+        MSG.printINFO("sending a new message")
+        channel: discord.TextChannel = client.get_channel(settings.id_channel)
         await channel.send(file=image, embed=server_status_embed)
 
+    updateServerStatusEmbed_finish_time = time.perf_counter()
+    MSG.printINFO(f'It took {(updateServerStatusEmbed_finish_time - updateServerStatusEmbed_start_time):.2f} seconds to update "server_status_embed"')
+    MSG.printINFO(f'server_status: "{client.server_status}", player_count: {client.player_count}')
 
 async def getMessage(id_channel: int, id_message: int) -> discord.Message:
     channel = client.get_channel(id_channel)
@@ -171,17 +173,21 @@ async def getMessage(id_channel: int, id_message: int) -> discord.Message:
 
     return None
 
-
 def getServerStatusEmbed(forced_shutdown: bool = None) -> discord.File | discord.Embed:
     splitted_path = settings.path_embed_image.split("/")
     imagename = splitted_path[len(splitted_path) - 1]
     image = discord.File(settings.path_embed_image, filename=imagename)
 
-    server_status_embed = discord.Embed(title="Reworked", colour=discord.Color.green(), timestamp=client.startup_time)
+    if client.server_status == MCLOG.STRING_SERVER_STATUS_OFFLINE:
+        server_status_embed = discord.Embed(title="Reworked", colour=discord.Color.red(), timestamp=client.startup_time)
+    elif client.server_status == MCLOG.STRING_SERVER_STATUS_ONLINE:
+        server_status_embed = discord.Embed(title="Reworked", colour=discord.Color.green(), timestamp=client.startup_time)
+    elif client.server_status == MCLOG.STRING_SERVER_STATUS_STARTING:
+        server_status_embed = discord.Embed(title="Reworked", colour=discord.Color.yellow(), timestamp=client.startup_time)
 
     # stato del server
     server_status_embed.add_field(name="Server Status:", value=client.server_status)
-    if client.server_status == ":red_circle: Offline":
+    if client.server_status == MCLOG.STRING_SERVER_STATUS_OFFLINE:
         server_status_embed.add_field(name="Players online:", value=f"<:steve:1382831305221472468> 0/{settings.max_players}")
     else:
         server_status_embed.add_field(
@@ -197,7 +203,6 @@ def getServerStatusEmbed(forced_shutdown: bool = None) -> discord.File | discord
 
     return [image, server_status_embed]
 
-
 async def handleCommandInvocation(interaction: discord.Interaction, command_name: str, admin_only_command: bool) -> bool:
     MSG.printINFO(f'"/{command_name}" invoked by {interaction.user}')
 
@@ -206,9 +211,12 @@ async def handleCommandInvocation(interaction: discord.Interaction, command_name
         return False
     return True
 
+def updatePreviousValues():
+    client.previous_player_count = client.player_count
+    client.previous_server_status = client.server_status
+    client.cycles_count = 0
 
 async def shutdown(forced_shutdown: bool):
-
     await updateServerStatusEmbed(forced_shutdown=forced_shutdown)
 
     MSG.printWARNING(f"{client.user} is now shutting down")
