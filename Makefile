@@ -1,21 +1,26 @@
-PYINST = pyinstaller
+PYINST =pyinstaller
 
-BOT_NAME =Reworked_BOT
+BOT_NAME =McStatusBot
 
 FILE_NAME =--name $(BOT_NAME)
 CONFIGS =--add-data $(BOT_NAME).toml:$(BOT_NAME)
-FILE_ICON =--icon src\resources\images\$(BOT_NAME).ico
+#FILE_ICON =--icon res\images\$(BOT_NAME).ico
 FLAGS =--onefile --debug all --console --distpath ./ --paths=.venv\Lib\site-packages $(FILE_NAME) $(FILE_VERSION) $(CONFIGS) $(FILE_ICON)
 
-FILES = src/main.py src/GetSettings.py src/resources/ConsoleMessagesHandling.py src/resources/LatestLogParser.py
+FILES = src/main.py lib/GetSettings.py lib/ConsoleMessagesHandling.py lib/LatestLogParser.py
 SEPARATOR = ------------------------------------------------------------------------------------------
 .PHONY = clean_all
+
+test: # C:\msys64\ucrt64\bin\mingw32-make.exe test
+	.venv\Scripts\activate
+	python ./src/main.py --config-toml ../McStatusBot.toml
 
 clean_all: # C:\msys64\ucrt64\bin\mingw32-make.exe clean_all
 	-powershell Remove-Item -r "*.exe" -ErrorAction SilentlyContinue
 	-powershell Remove-Item -r "*.spec" -ErrorAction SilentlyContinue
 	-powershell Remove-Item -r "build/*" -ErrorAction SilentlyContinue
-	-powershell Remove-Item -r "__pycache__" -ErrorAction SilentlyContinue
+	-powershell Remove-Item -r "src/lib/__pycache__" -ErrorAction SilentlyContinue
+	-powershell Remove-Item -r "src/__pycache__" -ErrorAction SilentlyContinue
 	-powershell Remove-Item -r ".pytest_cache" -ErrorAction SilentlyContinue
 	@echo $(SEPARATOR)
 	@echo Removed all the generated files
@@ -24,7 +29,7 @@ clean_all: # C:\msys64\ucrt64\bin\mingw32-make.exe clean_all
 build_clean:
 	.venv\Scripts\activate
 	$(PYINST) $(FILES) $(FLAGS) --clean
-	powershell Remove-Item -r "*.spec"
+	-powershell Remove-Item -r "*.spec" -ErrorAction SilentlyContinue
 	@echo $(SEPARATOR)
 	@echo Successfully created the executable
 	@echo $(SEPARATOR)

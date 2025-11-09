@@ -4,8 +4,9 @@
 - [x] unire i due embed in uno solo
 - [x] permettere l'esecuzione dei comandi SOLO all'admin
 - [x] reinserire possibilità di mandare gli indirizzi nell'embed
-- [ ] rendere il bot generico senza nomi relativi a server mc specifici
+- [x] rendere il bot generico senza nomi relativi a server mc specifici
 - [ ] eliminare parrotBOT
 
 ### SECONDARIE
 - [ ] leggere il numero di players massimi direttamente da "server.properties"
+- [ ] README.md

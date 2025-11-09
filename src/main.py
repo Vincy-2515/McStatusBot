@@ -2,19 +2,34 @@ import time
 import datetime
 import sys
 import discord
+import argparse
 from discord.ext import commands
 from discord.ext import tasks
-import GetSettings
-import resources.LatestLogParser as MCLOG
-import resources.ConsoleMessagesHandling as MSG
-import resources.IpAddressGrabber as IPADDRESS
+import lib.GetSettings as SETTINGS
+import lib.LatestLogParser as MCLOG
+import lib.ConsoleMessagesHandling as MSG
+import lib.IpAddressGrabber as IPADDRESS
 
-try:
-    settings = GetSettings.Settings()
-except Exception as e:
-    MSG.printERROR(f"failed the collection of the settings from the file: {e}")
+GUILD_ID: discord.Object = None
+settings = SETTINGS.Settings()
 
-GUILD_ID = discord.Object(id=settings.server_id)
+
+def main():
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--config-toml", type=str, help="The path to the configuration TOML file.")
+    args = parser.parse_args()
+
+    MSG.printINFO(f"Received 'config_toml' path: '{args.config_toml}'")
+
+    try:
+        global settings, GUILD_ID
+        settings.updateSettings(args.config_toml)
+        GUILD_ID = discord.Object(id=settings.server_id)
+    except Exception as e:
+        MSG.printERROR(f"failed the collection of the settings from the file: {e}")
+
+
+main()  # MUST BE CALLED BEFORE THE DEFINITION OF EVERYTHING ELSE
 
 
 class Client(commands.Bot):
@@ -88,7 +103,6 @@ class Client(commands.Bot):
 intents = discord.Intents.default()
 intents.message_content = True
 client = Client(command_prefix="/", intents=intents)
-
 
 ### commands ##############################################################################
 
@@ -198,11 +212,17 @@ def getServerStatusEmbed(forced_shutdown: bool = None) -> discord.File | discord
     image = discord.File(settings.embed_image_path, filename=imagename)
 
     if client.server_status == MCLOG.STRING_SERVER_STATUS_OFFLINE:
-        server_status_embed = discord.Embed(title="Reworked", colour=discord.Color.red(), timestamp=client.startup_time)
+        server_status_embed = discord.Embed(
+            title=settings.server_name, colour=discord.Color.red(), timestamp=client.startup_time
+        )
     elif client.server_status == MCLOG.STRING_SERVER_STATUS_ONLINE:
-        server_status_embed = discord.Embed(title="Reworked", colour=discord.Color.green(), timestamp=client.startup_time)
+        server_status_embed = discord.Embed(
+            title=settings.server_name, colour=discord.Color.green(), timestamp=client.startup_time
+        )
     elif client.server_status == MCLOG.STRING_SERVER_STATUS_STARTING:
-        server_status_embed = discord.Embed(title="Reworked", colour=discord.Color.yellow(), timestamp=client.startup_time)
+        server_status_embed = discord.Embed(
+            title=settings.server_name, colour=discord.Color.yellow(), timestamp=client.startup_time
+        )
 
     addServerStatusFields(server_status_embed)
     if settings.is_add_addresses_fields_enabled:
@@ -296,5 +316,4 @@ async def shutdown(forced_shutdown: bool):
     MSG.printWARNING(f"{client.user} is now shutting down")
     sys.exit(0)
 
-
-client.run(settings.bot_token)
+client.run(settings.bot_token)  # MUST BE CALLED AFTER COMMAND DEFINITION
