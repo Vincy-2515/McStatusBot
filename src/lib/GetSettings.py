@@ -1,6 +1,6 @@
 import tomllib
-import lib.ConsoleMessagesHandling as MSG
 from typing import Any
+import lib.ConsoleMessagesHandling as MSG
 
 
 class Settings:

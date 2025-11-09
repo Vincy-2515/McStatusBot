@@ -1,11 +1,11 @@
-import time
-import datetime
 import sys
+import time
 import discord
-from typing import Any, Optional
+import datetime
 import argparse
-from discord.ext import commands
 from discord.ext import tasks
+from discord.ext import commands
+from typing import Any, Optional
 import lib.GetSettings as SETTINGS
 import lib.LatestLogParser as MCLOG
 import lib.ConsoleMessagesHandling as MSG
@@ -108,9 +108,8 @@ class Client(commands.Bot):
 
 
 intents = discord.Intents.default()
-
-intents = {"guild_messages": True, "message_content": True, "expressions": True}
-client = Client(intents=intents)
+intents.message_content = True
+client = Client(command_prefix="/", intents=intents)  # type: ignore
 
 ### commands ##############################################################################
 
@@ -204,6 +203,9 @@ async def updateServerStatusEmbed(forced_shutdown: bool = False):
         if isinstance(channel, discord.TextChannel):
             if image is not None and server_status_embed is not None:
                 await channel.send(file=image, embed=server_status_embed)
+    finally:
+        if image is not None:
+            image.close()
 
     updateServerStatusEmbed_finish_time = time.perf_counter()
     MSG.printINFO(

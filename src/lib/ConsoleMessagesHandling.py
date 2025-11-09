@@ -1,5 +1,5 @@
-from datetime import datetime
 import inspect
+from datetime import datetime
 
 DATETIME_FORMAT = "%Y-%m-%d %H:%M:%S"
 MAX_FUNCTION_NAME_LENGTH = 32
