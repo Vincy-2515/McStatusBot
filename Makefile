@@ -3,11 +3,11 @@ PYINST =pyinstaller
 BOT_NAME =McStatusBot
 
 FILE_NAME =--name $(BOT_NAME)
-CONFIGS =--add-data $(BOT_NAME).toml:$(BOT_NAME)
+#CONFIGS =--add-data $(BOT_NAME).toml:$(BOT_NAME)
 #FILE_ICON =--icon res\images\$(BOT_NAME).ico
 FLAGS =--onefile --debug all --console --distpath ./ --paths=.venv\Lib\site-packages $(FILE_NAME) $(FILE_VERSION) $(CONFIGS) $(FILE_ICON)
 
-FILES = src/main.py lib/GetSettings.py lib/ConsoleMessagesHandling.py lib/LatestLogParser.py
+FILES = src/main.py src/lib/GetSettings.py src/lib/ConsoleMessagesHandling.py src/lib/LatestLogParser.py
 SEPARATOR = ------------------------------------------------------------------------------------------
 .PHONY = clean_all
 
