@@ -52,8 +52,9 @@ def parseLatestLogForPlayerCount(path: str) -> int:
 
     return player_count
 
+
 def parseLatestLogForE4MCAddress(path: str) -> str:
-    splitted_current_line: str = ""
+    splitted_current_line: list[str] = []
     e4mc_address: str = ""
 
     file = open(path, "r")
@@ -72,7 +73,7 @@ def parseLatestLogForE4MCAddress(path: str) -> str:
 
     if e4mc_address == "":
         MSG.printERROR("Failed to obtain the e4mc address")
-        return None
+        return ""
 
     MSG.printINFO("Successfully obtained the e4mc address")
 

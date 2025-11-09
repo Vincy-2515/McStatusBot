@@ -13,15 +13,14 @@ SEPARATOR = --------------------------------------------------------------------
 
 test: # C:\msys64\ucrt64\bin\mingw32-make.exe test
 	.venv\Scripts\activate
-	python ./src/main.py --config-toml ../McStatusBot.toml
+	python -Wdefault ./src/main.py --config-toml ../McStatusBot.toml
 
 clean_all: # C:\msys64\ucrt64\bin\mingw32-make.exe clean_all
 	-powershell Remove-Item -r "*.exe" -ErrorAction SilentlyContinue
 	-powershell Remove-Item -r "*.spec" -ErrorAction SilentlyContinue
 	-powershell Remove-Item -r "build/*" -ErrorAction SilentlyContinue
-	-powershell Remove-Item -r "src/lib/__pycache__" -ErrorAction SilentlyContinue
-	-powershell Remove-Item -r "src/__pycache__" -ErrorAction SilentlyContinue
-	-powershell Remove-Item -r ".pytest_cache" -ErrorAction SilentlyContinue
+	-powershell Remove-Item -r "**/__pycache__" -ErrorAction SilentlyContinue
+	-powershell Remove-Item -r "*.pytest_cache" -ErrorAction SilentlyContinue
 	@echo $(SEPARATOR)
 	@echo Removed all the generated files
 	@echo $(SEPARATOR)

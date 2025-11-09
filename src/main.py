@@ -2,6 +2,7 @@ import time
 import datetime
 import sys
 import discord
+from typing import Any, Optional
 import argparse
 from discord.ext import commands
 from discord.ext import tasks
@@ -10,9 +11,9 @@ import lib.LatestLogParser as MCLOG
 import lib.ConsoleMessagesHandling as MSG
 import lib.IpAddressGrabber as IPADDRESS
 
-CONFIG_TOML_PATH: str = None
+config_toml_path: str = ""
 settings = SETTINGS.Settings()
-GUILD_ID: discord.Object = None
+guild_id: discord.Object
 
 
 def main():
@@ -23,10 +24,10 @@ def main():
     MSG.printINFO(f"Received 'config_toml' path: '{args.config_toml}'")
 
     try:
-        global CONFIG_TOML_PATH, settings, GUILD_ID
-        CONFIG_TOML_PATH = args.config_toml
-        settings.updateSettings(CONFIG_TOML_PATH)
-        GUILD_ID = discord.Object(id=settings.server_id)
+        global config_toml_path, settings, guild_id
+        config_toml_path = args.config_toml
+        settings.updateSettings(config_toml_path)
+        guild_id = discord.Object(id=settings.server_id)
     except Exception as e:
         MSG.printERROR(f"failed the collection of the settings from the file: {e}")
 
@@ -35,9 +36,9 @@ main()  # MUST BE CALLED BEFORE THE DEFINITION OF EVERYTHING ELSE
 
 
 class Client(commands.Bot):
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *args: tuple[Any], **kwargs: dict[str, Any]):
         super().__init__(*args, **kwargs)
-        self.startup_time: datetime.datetime = None
+        self.startup_time: datetime.datetime
         self.after_online: bool = False
 
         self.player_count: int = 0
@@ -46,23 +47,27 @@ class Client(commands.Bot):
         self.previous_server_status: str = ""
         self.cycles_count = 0
 
-        self.ethernet_address: str = None
-        self.wifi_address: str = None
-        self.hamachi_address: str = None
-        self.e4mc_address: str = None
+        self.ethernet_address: str = ""
+        self.wifi_address: str = ""
+        self.hamachi_address: str = ""
+        self.e4mc_address: str = ""
 
     async def on_ready(self):
+        if client.user is None:
+            MSG.printERROR("The bot user is not initialized.")
+            return
+
         MSG.printINFO(f"logged in as {client.user} (ID: {client.user.id})")
         MSG.printWARNING("press [CTRL]+[C] to stop the bot, enjoy :)")
 
         try:
-            synced = await self.tree.sync(guild=GUILD_ID)
+            synced = await self.tree.sync(guild=guild_id)
             MSG.printINFO(f"synchronized {len(synced)} command(s)")
         except Exception as e:
             MSG.printERROR(f"commands synchronization error: {e}")
 
     async def setup_hook(self) -> None:
-        self.tree.copy_global_to(guild=GUILD_ID)
+        self.tree.copy_global_to(guild=guild_id)
         self.updateServerStatus.start()
 
     @tasks.loop(seconds=settings.server_status_update_delay)
@@ -103,8 +108,9 @@ class Client(commands.Bot):
 
 
 intents = discord.Intents.default()
-intents.message_content = True
-client = Client(command_prefix="/", intents=intents)
+
+intents = {"guild_messages": True, "message_content": True, "expressions": True}
+client = Client(intents=intents)
 
 ### commands ##############################################################################
 
@@ -119,7 +125,11 @@ async def sendstatus(interaction: discord.Interaction):
     await interaction.response.defer(thinking=True)
 
     image, server_status_embed = getServerStatusEmbed()
-    previous_message: discord.Message = await getMessage(settings.channel_id, settings.message_id)
+    previous_message = await getMessage(settings.channel_id, settings.message_id)
+
+    if not isinstance(previous_message, discord.Message):
+        MSG.printERROR(f"The message {settings.message_id} is not a Message")
+        return
 
     try:
         await previous_message.edit()
@@ -127,7 +137,7 @@ async def sendstatus(interaction: discord.Interaction):
     except Exception as e:
         MSG.printWARNING(f"couldn't edit the server stauts message, sending a new message. Error: {e}")
         await interaction.followup.send(file=image, embed=server_status_embed)
-        settings.updateSettings(CONFIG_TOML_PATH)
+        settings.updateSettings(config_toml_path)
 
 
 @client.tree.command(name="reloaddata", description="Ricarica tutti i dati che il bot raccoglie da vari files")
@@ -138,7 +148,7 @@ async def reloaddata(interaction: discord.Interaction):
     await interaction.response.defer(thinking=True)
 
     try:
-        settings.updateSettings(CONFIG_TOML_PATH)
+        settings.updateSettings(config_toml_path)
 
         if settings.is_add_addresses_fields_enabled:
             updateAddresses()
@@ -167,23 +177,33 @@ async def shutdownbot(interaction: discord.Interaction):
 ### other functions #######################################################################
 
 
-async def updateServerStatusEmbed(forced_shutdown: bool = None):
+async def updateServerStatusEmbed(forced_shutdown: bool = False):
     MSG.printINFO('Updating "server_status_embed"...')
     updateServerStatusEmbed_start_time = time.perf_counter()
 
+    image = None
+    server_status_embed = None
+
     try:
-        previous_message: discord.Message = await getMessage(settings.channel_id, settings.message_id)
+        previous_message = await getMessage(settings.channel_id, settings.message_id)
         image, server_status_embed = getServerStatusEmbed(forced_shutdown=forced_shutdown)
+
+        if not isinstance(previous_message, discord.Message):
+            MSG.printERROR(f"The message {settings.message_id} is not a Message")
+            return
 
         await previous_message.edit(
             attachments=[image], embed=server_status_embed
         )  ################################### TROPPO CONSUMO DI TEMPO
     except Exception as e:
-        settings.updateSettings(CONFIG_TOML_PATH)
+        settings.updateSettings(config_toml_path)
         MSG.printERROR(f'failed "server_status_embed" update: {e}')
         MSG.printINFO("sending a new message")
-        channel: discord.TextChannel = client.get_channel(settings.channel_id)
-        await channel.send(file=image, embed=server_status_embed)
+        channel = client.get_channel(settings.channel_id)
+
+        if isinstance(channel, discord.TextChannel):
+            if image is not None and server_status_embed is not None:
+                await channel.send(file=image, embed=server_status_embed)
 
     updateServerStatusEmbed_finish_time = time.perf_counter()
     MSG.printINFO(
@@ -192,15 +212,18 @@ async def updateServerStatusEmbed(forced_shutdown: bool = None):
     MSG.printINFO(f'server_status: "{client.server_status}", player_count: {client.player_count}')
 
 
-async def getMessage(id_channel: int, id_message: int) -> discord.Message:
-    channel = client.get_channel(id_channel)
+async def getMessage(channel_id: int, message_id: int) -> Optional[discord.Message]:
+    channel = client.get_channel(channel_id)
+
+    if not isinstance(channel, discord.TextChannel):
+        MSG.printERROR(f"The channel {channel_id} is not a TextChannel")
+        return
 
     try:
-        if channel is not None:
-            try:
-                return await channel.fetch_message(id_message)
-            except Exception as e:
-                MSG.printERROR(f"Unable to fetch the message: {e}")
+        try:
+            return await channel.fetch_message(message_id)
+        except Exception as e:
+            MSG.printERROR(f"Unable to fetch the message: {e}")
     except Exception as e:
         MSG.printERROR(f'Error with "id_channel": {e}')
         return None
@@ -208,7 +231,7 @@ async def getMessage(id_channel: int, id_message: int) -> discord.Message:
     return None
 
 
-def getServerStatusEmbed(forced_shutdown: bool = None) -> discord.File | discord.Embed:
+def getServerStatusEmbed(forced_shutdown: bool = False) -> tuple[discord.File, discord.Embed]:
     splitted_path = settings.embed_image_path.split("/")
     imagename = splitted_path[len(splitted_path) - 1]
     image = discord.File(settings.embed_image_path, filename=imagename)
@@ -239,7 +262,7 @@ def getServerStatusEmbed(forced_shutdown: bool = None) -> discord.File | discord
 
     server_status_embed.set_image(url=f"attachment://{imagename}")
 
-    return [image, server_status_embed]
+    return image, server_status_embed
 
 
 async def handleCommandInvocation(interaction: discord.Interaction, command_name: str, admin_only_command: bool) -> bool:
@@ -268,33 +291,28 @@ def addServerStatusFields(server_status_embed: discord.Embed):
 
 
 def addAddressesFields(server_status_embed: discord.Embed):
-    if (
-        client.ethernet_address != None
-        or client.wifi_address != None
-        or client.e4mc_address != None
-        or client.hamachi_address != None
-    ):
+    if client.ethernet_address != "" or client.wifi_address != "" or client.e4mc_address != "" or client.hamachi_address != "":
         server_status_embed.add_field(name="Indirizzi per la connessione:", value="", inline=False)
 
-    if client.ethernet_address != None and client.wifi_address == None:
+    if client.ethernet_address != "" and client.wifi_address == "":
         server_status_embed.add_field(
             name="",
             value=f"* __Indirizzo locale:__||```{client.ethernet_address}:{settings.server_port}```||",
             inline=False,
         )
-    if client.wifi_address != None:
+    if client.wifi_address != "":
         server_status_embed.add_field(
             name="",
             value=f"* __Indirizzo locale:__||```{client.wifi_address}:{settings.server_port}```||",
             inline=False,
         )
-    if client.e4mc_address != None:
+    if client.e4mc_address != "":
         server_status_embed.add_field(
             name="",
             value=f"* __Indirizzo e4mc:__||```{client.e4mc_address}```||",
             inline=False,
         )
-    if client.hamachi_address != None:
+    if client.hamachi_address != "":
         server_status_embed.add_field(
             name="",
             value=f"* __Indirizzo Hamachi:__||```{client.hamachi_address}:{settings.server_port}```||",
@@ -310,10 +328,10 @@ def updateAddresses():
 
 
 async def shutdown(forced_shutdown: bool):
-    client.ethernet_address = None
-    client.wifi_address = None
-    client.hamachi_address = None
-    client.e4mc_address = None
+    client.ethernet_address = ""
+    client.wifi_address = ""
+    client.hamachi_address = ""
+    client.e4mc_address = ""
 
     await updateServerStatusEmbed(forced_shutdown=forced_shutdown)
 

@@ -1,5 +1,6 @@
 import tomllib
 import lib.ConsoleMessagesHandling as MSG
+from typing import Any
 
 
 class Settings:
@@ -23,7 +24,8 @@ class Settings:
     def updateSettings(self, config_toml_path: str):
         try:
             file = open(config_toml_path, "rb")
-            toml_dict: dict = tomllib.load(file)
+            toml_dict: dict[str, Any] = tomllib.load(file)
+            file.close()
             MSG.printINFO(f"updating settings from '{config_toml_path}'")
         except Exception as e:
             MSG.printERROR(f"could not open '{config_toml_path}': {e}")

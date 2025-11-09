@@ -4,7 +4,8 @@ import inspect
 DATETIME_FORMAT = "%Y-%m-%d %H:%M:%S"
 MAX_FUNCTION_NAME_LENGTH = 32
 
-def printINFO(message):
+
+def printINFO(message: str):
     now = datetime.now()
     current_time = now.strftime(DATETIME_FORMAT)
 
@@ -12,10 +13,11 @@ def printINFO(message):
     reset = "\033[0m"
 
     _, function_name, _ = getCallerInformation()
-    function_name= formatFunctionName(function_name, MAX_FUNCTION_NAME_LENGTH)
+    function_name = formatFunctionName(function_name, MAX_FUNCTION_NAME_LENGTH)
     print(f"{blue}[{current_time}] [INFO    ] [{function_name}]: {message} {reset}")
 
-def printWARNING(message):
+
+def printWARNING(message: str):
     now = datetime.now()
     current_time = now.strftime(DATETIME_FORMAT)
 
@@ -24,19 +26,21 @@ def printWARNING(message):
     reset = "\033[0m"
 
     _, function_name, _ = getCallerInformation()
-    function_name= formatFunctionName(function_name, MAX_FUNCTION_NAME_LENGTH)
+    function_name = formatFunctionName(function_name, MAX_FUNCTION_NAME_LENGTH)
     print(f"{yellow}{bold}[{current_time}] [WARNING ] [{function_name}]: {message} {reset}")
 
-def printERROR(message):
+
+def printERROR(message: str):
     now = datetime.now()
     current_time = now.strftime(DATETIME_FORMAT)
 
     red = "\033[1;34;31m"
     reset = "\033[0m"
-    
+
     file_name, function_name, line_number = getCallerInformation()
     print(f"{red}[{current_time}] [ERROR   ] [{file_name}:{line_number}] [{function_name}]:")
     print(f"                        \\------> {message} {reset}")
+
 
 def getCallerInformation():
     stack_information = inspect.stack()[2]
@@ -46,7 +50,7 @@ def getCallerInformation():
     return file_name, function_name, line_number
 
 
-def formatFunctionName(function_name:str, max_function_name_length:int, ellipsis:str='...'):
+def formatFunctionName(function_name: str, max_function_name_length: int, ellipsis: str = "..."):
     function_name_length = len(function_name)
     formatted_function_name = ""
     i = 0
@@ -61,6 +65,6 @@ def formatFunctionName(function_name:str, max_function_name_length:int, ellipsis
         formatted_function_name = function_name
 
     elif function_name_length > max_function_name_length:
-        formatted_function_name = function_name[:max(0, max_function_name_length - len(ellipsis))] + ellipsis
+        formatted_function_name = function_name[: max(0, max_function_name_length - len(ellipsis))] + ellipsis
 
     return formatted_function_name
