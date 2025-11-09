@@ -7,14 +7,20 @@ BOT_TOML = "Reworked_BOT.toml"
 class Settings:
     def __init__(self):
         self.bot_token: str
-        self.server_admins: str
-        self.path_embed_image: str
-        self.serverStatus_update_delay: int
-        self.id_server: int
-        self.id_channel: int
-        self.id_message_serverStatus: int
+        self.bot_admins: str
+
+        self.is_add_addresses_fields_enabled: bool
+        self.server_status_update_delay: int
+        self.embed_image_path: str
+
+        self.server_id: int
+        self.channel_id: int
+        self.message_id: int
+
         self.max_players: int
-        self.path_latest_log: str
+        self.server_port: int
+        self.latest_log_path: str
+
         self.updateSettings()
 
     def updateSettings(self):
@@ -27,27 +33,31 @@ class Settings:
             return
 
         self.bot_token = toml_dict["discord"]["bot_token"]
-        self.server_admins = toml_dict["discord"]["server_admins"]
-        self.serverStatus_update_delay = toml_dict["discord"]["serverStatus_update_delay"]
-        self.path_embed_image = toml_dict["discord"]["path"]["embed_image"]
-        self.id_server = toml_dict["discord"]["id"]["server"]
-        self.id_channel = toml_dict["discord"]["id"]["channel"]
-        self.id_message_serverStatus = toml_dict["discord"]["id"]["message"]["server_status"]
+        self.bot_admins = toml_dict["discord"]["bot_admins"]
+
+        self.is_add_addresses_fields_enabled = toml_dict["discord"]["embed"]["add_addresses_fields"]
+        self.server_status_update_delay = toml_dict["discord"]["embed"]["server_status"]["update_delay"]
+        self.embed_image_path = toml_dict["discord"]["embed"]["path"]["embed_image"]
+
+        self.server_id = toml_dict["discord"]["id"]["server"]
+        self.channel_id = toml_dict["discord"]["id"]["channel"]
+        self.message_id = toml_dict["discord"]["id"]["message"]
+
         self.max_players = toml_dict["minecraft"]["max_players"]
-        self.path_latest_log = toml_dict["minecraft"]["path"]["latest_log"]
+        self.server_port = toml_dict["minecraft"]["server_port"]
+        self.latest_log_path = toml_dict["minecraft"]["path"]["latest_log"]
 
 
 if __name__ == "__main__":
     settings = Settings()
     print(settings.bot_token)
-    print(settings.server_admins)
-    print(settings.serverStatus_update_delay)
-    print(settings.path_embed_image)
-    print(settings.id_server)
-    print(settings.id_channel)
-    print(settings.id_message_serverStatus)
+    print(settings.bot_admins)
+    print(settings.is_add_addresses_fields_enabled)
+    print(settings.server_status_update_delay)
+    print(settings.embed_image_path)
+    print(settings.server_id)
+    print(settings.channel_id)
+    print(settings.message_id)
     print(settings.max_players)
-    print(settings.path_latest_log)
-
-    if "zac_oo1" in settings.server_admins:
-        print("yes")
+    print(settings.server_port)
+    print(settings.latest_log_path)

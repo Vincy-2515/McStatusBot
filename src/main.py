@@ -7,13 +7,15 @@ from discord.ext import tasks
 import GetSettings
 import resources.LatestLogParser as MCLOG
 import resources.ConsoleMessagesHandling as MSG
+import resources.IpAddressGrabber as IPADDRESS
 
 try:
     settings = GetSettings.Settings()
 except Exception as e:
     MSG.printERROR(f"failed the collection of the settings from the file: {e}")
 
-GUILD_ID = discord.Object(id=settings.id_server)
+GUILD_ID = discord.Object(id=settings.server_id)
+
 
 class Client(commands.Bot):
     def __init__(self, *args, **kwargs):
@@ -26,6 +28,11 @@ class Client(commands.Bot):
         self.previous_player_count: int = 0
         self.previous_server_status: str = ""
         self.cycles_count = 0
+
+        self.ethernet_address: str = None
+        self.wifi_address: str = None
+        self.hamachi_address: str = None
+        self.e4mc_address: str = None
 
     async def on_ready(self):
         MSG.printINFO(f"logged in as {client.user} (ID: {client.user.id})")
@@ -41,23 +48,28 @@ class Client(commands.Bot):
         self.tree.copy_global_to(guild=GUILD_ID)
         self.updateServerStatus.start()
 
-    @tasks.loop(seconds=settings.serverStatus_update_delay)
+    @tasks.loop(seconds=settings.server_status_update_delay)
     async def updateServerStatus(self):
-        self.server_status = MCLOG.parseLatestLogForServerStatus(settings.path_latest_log)
-        self.player_count = MCLOG.parseLatestLogForPlayerCount(settings.path_latest_log)
+        self.server_status = MCLOG.parseLatestLogForServerStatus(settings.latest_log_path)
+        self.player_count = MCLOG.parseLatestLogForPlayerCount(settings.latest_log_path)
 
         if (self.previous_player_count != self.player_count) or (self.previous_server_status != self.server_status):
-            MSG.printINFO(f'Values have changed after {self.cycles_count} cycles (or {self.cycles_count * settings.serverStatus_update_delay} seconds)')
+            MSG.printINFO(
+                f"Values have changed after {self.cycles_count} cycles (or {self.cycles_count * settings.server_status_update_delay} seconds)"
+            )
 
             if self.server_status == MCLOG.STRING_SERVER_STATUS_ONLINE and self.after_online == False:
                 MSG.printINFO("The server is online")
+
+                if settings.is_add_addresses_fields_enabled:
+                    updateAddresses()
 
                 self.startup_time = datetime.datetime.now()
                 self.after_online = True
 
             elif self.server_status == MCLOG.STRING_SERVER_STATUS_STARTING:
                 MSG.printINFO("The server is starting")
-        
+
             elif self.server_status == MCLOG.STRING_SERVER_STATUS_OFFLINE and self.after_online == True:
                 MSG.printINFO("The server is offline, starting shutdown procedure...")
                 await shutdown(forced_shutdown=False)
@@ -67,7 +79,6 @@ class Client(commands.Bot):
 
         else:
             self.cycles_count += 1
-
 
     @updateServerStatus.before_loop
     async def beforeUpdateServerStatus(self):
@@ -92,7 +103,7 @@ async def sendstatus(interaction: discord.Interaction):
     await interaction.response.defer(thinking=True)
 
     image, server_status_embed = getServerStatusEmbed()
-    previous_message: discord.Message = await getMessage(settings.id_channel, settings.id_message_serverStatus)
+    previous_message: discord.Message = await getMessage(settings.channel_id, settings.message_id)
 
     try:
         await previous_message.edit()
@@ -113,8 +124,11 @@ async def reloaddata(interaction: discord.Interaction):
     try:
         settings.updateSettings()
 
-        client.server_status = MCLOG.parseLatestLogForServerStatus(settings.path_latest_log)
-        client.player_count = MCLOG.parseLatestLogForPlayerCount(settings.path_latest_log)
+        if settings.is_add_addresses_fields_enabled:
+            updateAddresses()
+
+        client.server_status = MCLOG.parseLatestLogForServerStatus(settings.latest_log_path)
+        client.player_count = MCLOG.parseLatestLogForPlayerCount(settings.latest_log_path)
 
         await updateServerStatusEmbed()
 
@@ -136,12 +150,13 @@ async def shutdownbot(interaction: discord.Interaction):
 
 ### other functions #######################################################################
 
+
 async def updateServerStatusEmbed(forced_shutdown: bool = None):
     MSG.printINFO('Updating "server_status_embed"...')
     updateServerStatusEmbed_start_time = time.perf_counter()
 
     try:
-        previous_message: discord.Message = await getMessage(settings.id_channel, settings.id_message_serverStatus)
+        previous_message: discord.Message = await getMessage(settings.channel_id, settings.message_id)
         image, server_status_embed = getServerStatusEmbed(forced_shutdown=forced_shutdown)
 
         await previous_message.edit(
@@ -151,12 +166,15 @@ async def updateServerStatusEmbed(forced_shutdown: bool = None):
         settings.updateSettings()
         MSG.printERROR(f'failed "server_status_embed" update: {e}')
         MSG.printINFO("sending a new message")
-        channel: discord.TextChannel = client.get_channel(settings.id_channel)
+        channel: discord.TextChannel = client.get_channel(settings.channel_id)
         await channel.send(file=image, embed=server_status_embed)
 
     updateServerStatusEmbed_finish_time = time.perf_counter()
-    MSG.printINFO(f'It took {(updateServerStatusEmbed_finish_time - updateServerStatusEmbed_start_time):.2f} seconds to update "server_status_embed"')
+    MSG.printINFO(
+        f'It took {(updateServerStatusEmbed_finish_time - updateServerStatusEmbed_start_time):.2f} seconds to update "server_status_embed"'
+    )
     MSG.printINFO(f'server_status: "{client.server_status}", player_count: {client.player_count}')
+
 
 async def getMessage(id_channel: int, id_message: int) -> discord.Message:
     channel = client.get_channel(id_channel)
@@ -173,10 +191,11 @@ async def getMessage(id_channel: int, id_message: int) -> discord.Message:
 
     return None
 
+
 def getServerStatusEmbed(forced_shutdown: bool = None) -> discord.File | discord.Embed:
-    splitted_path = settings.path_embed_image.split("/")
+    splitted_path = settings.embed_image_path.split("/")
     imagename = splitted_path[len(splitted_path) - 1]
-    image = discord.File(settings.path_embed_image, filename=imagename)
+    image = discord.File(settings.embed_image_path, filename=imagename)
 
     if client.server_status == MCLOG.STRING_SERVER_STATUS_OFFLINE:
         server_status_embed = discord.Embed(title="Reworked", colour=discord.Color.red(), timestamp=client.startup_time)
@@ -185,14 +204,9 @@ def getServerStatusEmbed(forced_shutdown: bool = None) -> discord.File | discord
     elif client.server_status == MCLOG.STRING_SERVER_STATUS_STARTING:
         server_status_embed = discord.Embed(title="Reworked", colour=discord.Color.yellow(), timestamp=client.startup_time)
 
-    # stato del server
-    server_status_embed.add_field(name="Server Status:", value=client.server_status)
-    if client.server_status == MCLOG.STRING_SERVER_STATUS_OFFLINE:
-        server_status_embed.add_field(name="Players online:", value=f"<:steve:1382831305221472468> 0/{settings.max_players}")
-    else:
-        server_status_embed.add_field(
-            name="Players online:", value=f"<:steve:1382831305221472468> {client.player_count}/{settings.max_players}"
-        )
+    addServerStatusFields(server_status_embed)
+    if settings.is_add_addresses_fields_enabled:
+        addAddressesFields(server_status_embed)
 
     if forced_shutdown:
         server_status_embed.add_field(
@@ -203,20 +217,80 @@ def getServerStatusEmbed(forced_shutdown: bool = None) -> discord.File | discord
 
     return [image, server_status_embed]
 
+
 async def handleCommandInvocation(interaction: discord.Interaction, command_name: str, admin_only_command: bool) -> bool:
     MSG.printINFO(f'"/{command_name}" invoked by {interaction.user}')
 
-    if (str(interaction.user) not in settings.server_admins) and (admin_only_command == True):
+    if (str(interaction.user) not in settings.bot_admins) and (admin_only_command == True):
         await interaction.response.send_message("Non puoi eseguire questo comando")
         return False
     return True
+
 
 def updatePreviousValues():
     client.previous_player_count = client.player_count
     client.previous_server_status = client.server_status
     client.cycles_count = 0
 
+
+def addServerStatusFields(server_status_embed: discord.Embed):
+    server_status_embed.add_field(name="Server Status:", value=client.server_status)
+    if client.server_status == MCLOG.STRING_SERVER_STATUS_OFFLINE:
+        server_status_embed.add_field(name="Players online:", value=f"<:steve:1382831305221472468> 0/{settings.max_players}")
+    else:
+        server_status_embed.add_field(
+            name="Players online:", value=f"<:steve:1382831305221472468> {client.player_count}/{settings.max_players}"
+        )
+
+
+def addAddressesFields(server_status_embed: discord.Embed):
+    if (
+        client.ethernet_address != None
+        or client.wifi_address != None
+        or client.e4mc_address != None
+        or client.hamachi_address != None
+    ):
+        server_status_embed.add_field(name="Indirizzi per la connessione:", value="", inline=False)
+
+    if client.ethernet_address != None and client.wifi_address == None:
+        server_status_embed.add_field(
+            name="",
+            value=f"* __Indirizzo locale:__||```{client.ethernet_address}:{settings.server_port}```||",
+            inline=False,
+        )
+    if client.wifi_address != None:
+        server_status_embed.add_field(
+            name="",
+            value=f"* __Indirizzo locale:__||```{client.wifi_address}:{settings.server_port}```||",
+            inline=False,
+        )
+    if client.e4mc_address != None:
+        server_status_embed.add_field(
+            name="",
+            value=f"* __Indirizzo e4mc:__||```{client.e4mc_address}```||",
+            inline=False,
+        )
+    if client.hamachi_address != None:
+        server_status_embed.add_field(
+            name="",
+            value=f"* __Indirizzo Hamachi:__||```{client.hamachi_address}:{settings.server_port}```||",
+            inline=False,
+        )
+
+
+def updateAddresses():
+    client.ethernet_address = IPADDRESS.ipAddressGrabber("Ethernet")
+    client.wifi_address = IPADDRESS.ipAddressGrabber("vEthernet (Custom)")
+    client.hamachi_address = IPADDRESS.ipAddressGrabber("Hamachi")
+    client.e4mc_address = MCLOG.parseLatestLogForE4MCAddress(settings.latest_log_path)
+
+
 async def shutdown(forced_shutdown: bool):
+    client.ethernet_address = None
+    client.wifi_address = None
+    client.hamachi_address = None
+    client.e4mc_address = None
+
     await updateServerStatusEmbed(forced_shutdown=forced_shutdown)
 
     MSG.printWARNING(f"{client.user} is now shutting down")

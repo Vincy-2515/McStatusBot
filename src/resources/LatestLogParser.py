@@ -52,10 +52,38 @@ def parseLatestLogForPlayerCount(path: str) -> int:
 
     return player_count
 
+def parseLatestLogForE4MCAddress(path: str) -> str:
+    splitted_current_line: str = ""
+    e4mc_address: str = ""
+
+    file = open(path, "r")
+    lines = file.readlines()
+    file.close()
+
+    i = 0
+    while i < len(lines):
+        if lines[i].find("[nioEventLoopGroup-2-1/INFO]: Domain assigned:") != -1:
+            splitted_current_line = lines[i].split()
+            break
+
+        i += 1
+
+    e4mc_address = splitted_current_line[4]
+
+    if e4mc_address == "":
+        MSG.printERROR("Failed to obtain the e4mc address")
+        return None
+
+    MSG.printINFO("Successfully obtained the e4mc address")
+
+    return e4mc_address
+
 
 if __name__ == "__main__":
     path = "src\\resources\\mc-logs\\latest.log"
     server_status = parseLatestLogForServerStatus(path)
     player_count = parseLatestLogForPlayerCount(path)
+    e4mc_address = parseLatestLogForE4MCAddress(path)
     print(f"Server status: {server_status}")
     print(f"Players: {player_count}")
+    print(f"e4mc_address: {e4mc_address}")
