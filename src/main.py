@@ -10,8 +10,9 @@ import lib.LatestLogParser as MCLOG
 import lib.ConsoleMessagesHandling as MSG
 import lib.IpAddressGrabber as IPADDRESS
 
-GUILD_ID: discord.Object = None
+CONFIG_TOML_PATH: str = None
 settings = SETTINGS.Settings()
+GUILD_ID: discord.Object = None
 
 
 def main():
@@ -22,8 +23,9 @@ def main():
     MSG.printINFO(f"Received 'config_toml' path: '{args.config_toml}'")
 
     try:
-        global settings, GUILD_ID
-        settings.updateSettings(args.config_toml)
+        global CONFIG_TOML_PATH, settings, GUILD_ID
+        CONFIG_TOML_PATH = args.config_toml
+        settings.updateSettings(CONFIG_TOML_PATH)
         GUILD_ID = discord.Object(id=settings.server_id)
     except Exception as e:
         MSG.printERROR(f"failed the collection of the settings from the file: {e}")
@@ -125,7 +127,7 @@ async def sendstatus(interaction: discord.Interaction):
     except Exception as e:
         MSG.printWARNING(f"couldn't edit the server stauts message, sending a new message. Error: {e}")
         await interaction.followup.send(file=image, embed=server_status_embed)
-        settings.updateSettings()
+        settings.updateSettings(CONFIG_TOML_PATH)
 
 
 @client.tree.command(name="reloaddata", description="Ricarica tutti i dati che il bot raccoglie da vari files")
@@ -136,7 +138,7 @@ async def reloaddata(interaction: discord.Interaction):
     await interaction.response.defer(thinking=True)
 
     try:
-        settings.updateSettings()
+        settings.updateSettings(CONFIG_TOML_PATH)
 
         if settings.is_add_addresses_fields_enabled:
             updateAddresses()
@@ -177,7 +179,7 @@ async def updateServerStatusEmbed(forced_shutdown: bool = None):
             attachments=[image], embed=server_status_embed
         )  ################################### TROPPO CONSUMO DI TEMPO
     except Exception as e:
-        settings.updateSettings()
+        settings.updateSettings(CONFIG_TOML_PATH)
         MSG.printERROR(f'failed "server_status_embed" update: {e}')
         MSG.printINFO("sending a new message")
         channel: discord.TextChannel = client.get_channel(settings.channel_id)
@@ -211,6 +213,8 @@ def getServerStatusEmbed(forced_shutdown: bool = None) -> discord.File | discord
     imagename = splitted_path[len(splitted_path) - 1]
     image = discord.File(settings.embed_image_path, filename=imagename)
 
+    server_status_embed = discord.Embed(title=settings.server_name, colour=discord.Color.dark_gray())
+
     if client.server_status == MCLOG.STRING_SERVER_STATUS_OFFLINE:
         server_status_embed = discord.Embed(
             title=settings.server_name, colour=discord.Color.red(), timestamp=client.startup_time
@@ -230,7 +234,7 @@ def getServerStatusEmbed(forced_shutdown: bool = None) -> discord.File | discord
 
     if forced_shutdown:
         server_status_embed.add_field(
-            name="", value="Attenzione! Lo stato del server potrebbe non essere aggiornato", inline=False
+            name="", value=":warning: Lo stato del server potrebbe non essere aggiornato", inline=False
         )
 
     server_status_embed.set_image(url=f"attachment://{imagename}")
@@ -315,5 +319,6 @@ async def shutdown(forced_shutdown: bool):
 
     MSG.printWARNING(f"{client.user} is now shutting down")
     sys.exit(0)
+
 
 client.run(settings.bot_token)  # MUST BE CALLED AFTER COMMAND DEFINITION
