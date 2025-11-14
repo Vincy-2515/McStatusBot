@@ -7,7 +7,7 @@ FILE_NAME =--name $(BOT_NAME)
 #FILE_ICON =--icon res\images\$(BOT_NAME).ico
 FLAGS =--onefile --debug all --console --distpath ./ --paths=.venv\Lib\site-packages $(FILE_NAME) $(FILE_VERSION) $(CONFIGS) $(FILE_ICON)
 
-FILES = src/main.py src/lib/GetSettings.py src/lib/ConsoleMessagesHandling.py src/lib/LatestLogParser.py
+FILES = src/main.py src/lib/GetSettings.py src/lib/LatestLogParser.py
 SEPARATOR = ------------------------------------------------------------------------------------------
 .PHONY = clean_all
 
@@ -21,8 +21,9 @@ clean_all: # C:\msys64\ucrt64\bin\mingw32-make.exe clean_all
 	-powershell Remove-Item -r "build/*" -ErrorAction SilentlyContinue
 	-powershell Remove-Item -r "src/lib/__pycache__" -ErrorAction SilentlyContinue
 	-powershell Remove-Item -r "*.pytest_cache" -ErrorAction SilentlyContinue
+	-powershell Remove-Item -r "logs/*" -ErrorAction SilentlyContinue
 	@echo $(SEPARATOR)
-	@echo Removed all the generated files
+	@echo Removed all the generated files and logs
 	@echo $(SEPARATOR)
 
 build_clean:

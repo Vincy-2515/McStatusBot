@@ -6,8 +6,9 @@
 - [x] reinserire possibilità di mandare gli indirizzi nell'embed
 - [x] rendere il bot generico senza nomi relativi a server mc specifici
 - [x] migliorare il codice rendendolo più robusto
-- [ ] sistemare il logging in modo da creare un file nuovo ogni volta non rimpiazzando il log precedente
-- [ ] implementare discord logging
+- [x] implementare discord logging
+- [x] sistemare il logging in modo da creare un file nuovo ogni volta non rimpiazzando il log precedente
+- [ ] gestire i log eliminando quelli più vecchi dopo un determinato numero limite
 - [ ] aggiungere comando info
 
 ### SECONDARIE

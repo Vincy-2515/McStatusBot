@@ -1,6 +1,7 @@
-import tomllib
+import tomllib, logging
 from typing import Any
-import lib.ConsoleMessagesHandling as MSG
+
+logger = logging.getLogger(__name__)
 
 
 class Settings:
@@ -26,10 +27,9 @@ class Settings:
             file = open(config_toml_path, "rb")
             toml_dict: dict[str, Any] = tomllib.load(file)
             file.close()
-            MSG.printINFO(f"updating settings from '{config_toml_path}'")
+            logger.info("updating settings from '{config_toml_path}'")
         except Exception as e:
-            MSG.printERROR(f"could not open '{config_toml_path}': {e}")
-            return
+            raise Exception(f"could not open '{config_toml_path}': {e}")
 
         self.bot_token = toml_dict["discord"]["bot_token"]
         self.bot_admins = toml_dict["discord"]["bot_admins"]

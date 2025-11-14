@@ -1,8 +1,10 @@
-import lib.ConsoleMessagesHandling as MSG
+import logging
 
 STRING_SERVER_STATUS_STARTING = ":yellow_circle: Starting..."
 STRING_SERVER_STATUS_ONLINE = ":green_circle: Online"
 STRING_SERVER_STATUS_OFFLINE = ":red_circle: Offline"
+
+logger = logging.getLogger(__name__)
 
 
 def parseLatestLogForServerStatus(path: str) -> str:
@@ -25,7 +27,7 @@ def parseLatestLogForServerStatus(path: str) -> str:
         i += 1
 
     if server_status == "":
-        MSG.printERROR("failed to obtain the server status")
+        logger.error("failed to obtain the server status")
         return ":red_circle: Offline"
 
     return server_status
@@ -72,10 +74,10 @@ def parseLatestLogForE4MCAddress(path: str) -> str:
     e4mc_address = splitted_current_line[4]
 
     if e4mc_address == "":
-        MSG.printERROR("Failed to obtain the e4mc address")
+        logger.error("Failed to obtain the e4mc address")
         return ""
 
-    MSG.printINFO("Successfully obtained the e4mc address")
+    logger.info("Successfully obtained the e4mc address")
 
     return e4mc_address
 

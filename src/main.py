@@ -1,35 +1,93 @@
-import sys
-import time
-import discord
-import datetime
-import argparse
+import os, sys, time, discord, logging, datetime, argparse
 from discord.ext import tasks
 from discord.ext import commands
 from typing import Any, Optional
 import lib.GetSettings as SETTINGS
 import lib.LatestLogParser as MCLOG
-import lib.ConsoleMessagesHandling as MSG
 import lib.IpAddressGrabber as IPADDRESS
+
+COLOR_TIME = "\033[38;5;59m"
+COLOR_LEVEL_NAME = "\033[38;5;25m"
+COLOR_NAME = "\033[38;5;105m"
+COLOR_MESSAGE = "\033[38;5;59m"
+COLOR_RESET = "\033[0m"
+
+LOG_DIRECTORY_PATH = "./logs"
+
+LOG_MESSAGE_TIME_FORMAT = "%A, %H:%M:%S"
+
+FILE_LOG_MESSAGE_FORMAT = "[{asctime}][{levelname}][{name}]: {message}"
+CONSOLE_LOG_MESSAGE_FORMAT = (
+    "["
+    + COLOR_TIME
+    + " {asctime} "
+    + COLOR_RESET
+    + "]"
+    + "["
+    + COLOR_LEVEL_NAME
+    + " {levelname:8} "
+    + COLOR_RESET
+    + "]"
+    + "["
+    + COLOR_NAME
+    + " {name:>30.30} "
+    + COLOR_RESET
+    + "]:"
+    + " {message}"
+)
 
 config_toml_path: str = ""
 settings = SETTINGS.Settings()
-guild_id: discord.Object
+guild: discord.Object
+logger: logging.Logger
+
+
+## main functions and bot class #############################################################
 
 
 def main():
+    loggingSetup()
+
     parser = argparse.ArgumentParser()
     parser.add_argument("--config-toml", type=str, help="The path to the configuration TOML file.")
     args = parser.parse_args()
 
-    MSG.printINFO(f"Received 'config_toml' path: '{args.config_toml}'")
+    logger.info(f"Received 'config_toml' path: '{args.config_toml}'")
 
     try:
-        global config_toml_path, settings, guild_id
+        global config_toml_path, settings, guild
         config_toml_path = args.config_toml
         settings.updateSettings(config_toml_path)
-        guild_id = discord.Object(id=settings.server_id)
+        guild = discord.Object(id=settings.server_id)
     except Exception as e:
-        MSG.printERROR(f"failed the collection of the settings from the file: {e}")
+        logger.critical(f"failed the collection of the settings from the file: {e}")
+        sys.exit(1)
+
+
+def loggingSetup():
+    global logger
+    logger = logging.getLogger(__name__)
+    discord_logger = logging.getLogger("discord")
+    logging.basicConfig(level=logging.INFO, datefmt=LOG_MESSAGE_TIME_FORMAT, format=CONSOLE_LOG_MESSAGE_FORMAT, style="{")
+
+    try:
+        os.makedirs(LOG_DIRECTORY_PATH)
+        logger.info(f"Directory '{LOG_DIRECTORY_PATH}' created successfully")
+    except FileExistsError:
+        logger.info(f"Directory '{LOG_DIRECTORY_PATH}' already exists")
+        pass
+    except OSError as e:
+        logger.error(f"Error creating/accessing directory '{LOG_DIRECTORY_PATH}': {e}")
+        return
+
+    now = datetime.datetime.now()
+    logger_file_handler = logging.FileHandler(f"{LOG_DIRECTORY_PATH}/{now.date()}_{now.strftime('%H,%M,%S')}.log")
+    logger_file_handler.setLevel(level=logging.INFO)
+    logger_file_handler_formatter = logging.Formatter(FILE_LOG_MESSAGE_FORMAT, datefmt=LOG_MESSAGE_TIME_FORMAT, style="{")
+    logger_file_handler.setFormatter(logger_file_handler_formatter)
+
+    logger.addHandler(logger_file_handler)
+    discord_logger.addHandler(logger_file_handler)
 
 
 main()  # MUST BE CALLED BEFORE THE DEFINITION OF EVERYTHING ELSE
@@ -54,20 +112,20 @@ class Client(commands.Bot):
 
     async def on_ready(self):
         if client.user is None:
-            MSG.printERROR("The bot user is not initialized.")
+            logger.error("The bot user is not initialized.")
             return
 
-        MSG.printINFO(f"logged in as {client.user} (ID: {client.user.id})")
-        MSG.printWARNING("press [CTRL]+[C] to stop the bot, enjoy :)")
+        logger.info(f"logged in as {client.user} (ID: {client.user.id})")
+        logger.warning("press [CTRL]+[C] to stop the bot, enjoy :)")
 
         try:
-            synced = await self.tree.sync(guild=guild_id)
-            MSG.printINFO(f"synchronized {len(synced)} command(s)")
+            synced = await self.tree.sync(guild=guild)
+            logger.info(f"synchronized {len(synced)} command(s)")
         except Exception as e:
-            MSG.printERROR(f"commands synchronization error: {e}")
+            logger.error(f"commands synchronization error: {e}")
 
     async def setup_hook(self) -> None:
-        self.tree.copy_global_to(guild=guild_id)
+        self.tree.copy_global_to(guild=guild)
         self.updateServerStatus.start()
 
     @tasks.loop(seconds=settings.server_status_update_delay)
@@ -76,12 +134,12 @@ class Client(commands.Bot):
         self.player_count = MCLOG.parseLatestLogForPlayerCount(settings.latest_log_path)
 
         if (self.previous_player_count != self.player_count) or (self.previous_server_status != self.server_status):
-            MSG.printINFO(
+            logger.info(
                 f"Values have changed after {self.cycles_count} cycles (or {self.cycles_count * settings.server_status_update_delay} seconds)"
             )
 
             if self.server_status == MCLOG.STRING_SERVER_STATUS_ONLINE and self.after_online == False:
-                MSG.printINFO("The server is online")
+                logger.info("The server is online")
 
                 if settings.is_add_addresses_fields_enabled:
                     updateAddresses()
@@ -90,10 +148,10 @@ class Client(commands.Bot):
                 self.after_online = True
 
             elif self.server_status == MCLOG.STRING_SERVER_STATUS_STARTING:
-                MSG.printINFO("The server is starting")
+                logger.info("The server is starting")
 
             elif self.server_status == MCLOG.STRING_SERVER_STATUS_OFFLINE and self.after_online == True:
-                MSG.printINFO("The server is offline, starting shutdown procedure...")
+                logger.info("The server is offline, starting shutdown procedure...")
                 await shutdown(forced_shutdown=False)
 
             await updateServerStatusEmbed()
@@ -127,14 +185,14 @@ async def sendstatus(interaction: discord.Interaction):
     previous_message = await getMessage(settings.channel_id, settings.message_id)
 
     if not isinstance(previous_message, discord.Message):
-        MSG.printERROR(f"The message {settings.message_id} is not a Message")
+        logger.error(f"The message {settings.message_id} is not a Message")
         return
 
     try:
         await previous_message.edit()
         await interaction.followup.send("Ho modificato il messaggio già esistente")
     except Exception as e:
-        MSG.printWARNING(f"couldn't edit the server stauts message, sending a new message. Error: {e}")
+        logger.warning(f"couldn't edit the server stauts message, sending a new message. Error: {e}")
         await interaction.followup.send(file=image, embed=server_status_embed)
         settings.updateSettings(config_toml_path)
 
@@ -157,10 +215,10 @@ async def reloaddata(interaction: discord.Interaction):
 
         await updateServerStatusEmbed()
 
-        MSG.printINFO("All data and settings are reloaded")
+        logger.info("All data and settings are reloaded")
         await interaction.followup.send("Dati e impostazioni ricaricati")
     except Exception as e:
-        MSG.printERROR(f"Reloading failed: {e}")
+        logger.error(f"Reloading failed: {e}")
         await interaction.followup.send("Errore nel ricaricamento, controlla la console per ulteriori informazioni")
 
 
@@ -177,7 +235,7 @@ async def shutdownbot(interaction: discord.Interaction):
 
 
 async def updateServerStatusEmbed(forced_shutdown: bool = False):
-    MSG.printINFO('Updating "server_status_embed"...')
+    logger.info('Updating "server_status_embed"...')
     updateServerStatusEmbed_start_time = time.perf_counter()
 
     image = None
@@ -188,7 +246,7 @@ async def updateServerStatusEmbed(forced_shutdown: bool = False):
         image, server_status_embed = getServerStatusEmbed(forced_shutdown=forced_shutdown)
 
         if not isinstance(previous_message, discord.Message):
-            MSG.printERROR(f"The message {settings.message_id} is not a Message")
+            logger.error(f"The message {settings.message_id} is not a Message")
             return
 
         await previous_message.edit(
@@ -196,8 +254,8 @@ async def updateServerStatusEmbed(forced_shutdown: bool = False):
         )  ################################### TROPPO CONSUMO DI TEMPO
     except Exception as e:
         settings.updateSettings(config_toml_path)
-        MSG.printERROR(f'failed "server_status_embed" update: {e}')
-        MSG.printINFO("sending a new message")
+        logger.error(f'failed "server_status_embed" update: {e}')
+        logger.info("sending a new message")
         channel = client.get_channel(settings.channel_id)
 
         if isinstance(channel, discord.TextChannel):
@@ -208,26 +266,26 @@ async def updateServerStatusEmbed(forced_shutdown: bool = False):
             image.close()
 
     updateServerStatusEmbed_finish_time = time.perf_counter()
-    MSG.printINFO(
+    logger.info(
         f'It took {(updateServerStatusEmbed_finish_time - updateServerStatusEmbed_start_time):.2f} seconds to update "server_status_embed"'
     )
-    MSG.printINFO(f'server_status: "{client.server_status}", player_count: {client.player_count}')
+    logger.info(f'server_status: "{client.server_status}", player_count: {client.player_count}')
 
 
 async def getMessage(channel_id: int, message_id: int) -> Optional[discord.Message]:
     channel = client.get_channel(channel_id)
 
     if not isinstance(channel, discord.TextChannel):
-        MSG.printERROR(f"The channel {channel_id} is not a TextChannel")
+        logger.error(f"The channel {channel_id} is not a TextChannel")
         return
 
     try:
         try:
             return await channel.fetch_message(message_id)
         except Exception as e:
-            MSG.printERROR(f"Unable to fetch the message: {e}")
+            logger.error(f"Unable to fetch the message: {e}")
     except Exception as e:
-        MSG.printERROR(f'Error with "id_channel": {e}')
+        logger.error(f'Error with "id_channel": {e}')
         return None
 
     return None
@@ -268,7 +326,7 @@ def getServerStatusEmbed(forced_shutdown: bool = False) -> tuple[discord.File, d
 
 
 async def handleCommandInvocation(interaction: discord.Interaction, command_name: str, admin_only_command: bool) -> bool:
-    MSG.printINFO(f'"/{command_name}" invoked by {interaction.user}')
+    logger.info(f'"/{command_name}" invoked by {interaction.user}')
 
     if (str(interaction.user) not in settings.bot_admins) and (admin_only_command == True):
         await interaction.response.send_message("Non puoi eseguire questo comando")
@@ -337,8 +395,8 @@ async def shutdown(forced_shutdown: bool):
 
     await updateServerStatusEmbed(forced_shutdown=forced_shutdown)
 
-    MSG.printWARNING(f"{client.user} is now shutting down")
+    logger.warning(f"{client.user} is now shutting down")
     sys.exit(0)
 
 
-client.run(settings.bot_token)  # MUST BE CALLED AFTER COMMAND DEFINITION
+client.run(settings.bot_token, log_handler=None)  # MUST BE CALLED AFTER COMMAND DEFINITION

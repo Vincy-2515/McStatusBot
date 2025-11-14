@@ -1,5 +1,6 @@
-import subprocess
-import lib.ConsoleMessagesHandling as MSG
+import subprocess, logging
+
+logger = logging.getLogger(__name__)
 
 
 def ipAddressGrabber(net_card: str):
@@ -8,10 +9,10 @@ def ipAddressGrabber(net_card: str):
     stdout = subprocess.run(["powershell", "-Command", command], capture_output=True)
 
     if stdout.returncode != 0:
-        MSG.printWARNING(f'"Get-NetIPAddress" failed for "{net_card}", skipping')
+        logger.error(f'"Get-NetIPAddress" failed for "{net_card}", skipping')
         return ""
     else:
-        MSG.printINFO(f'"Get-NetIPAddress" successful for "{net_card}"')
+        logger.info(f'"Get-NetIPAddress" successful for "{net_card}"')
         decoded_stdout = stdout.stdout.decode()
 
     splitted_stdout = decoded_stdout.split()
@@ -25,10 +26,10 @@ def ipAddressGrabber(net_card: str):
             continue
 
     if ip_address == "":
-        MSG.printERROR(f'Failed to obtain {net_card} address from the "Get-NetIPAddress" output')
+        logger.error(f'Failed to obtain {net_card} address from the "Get-NetIPAddress" output, skipping')
         return ""
     else:
-        MSG.printINFO(f'Successfully obtained {net_card} address from the "Get-NetIPAddress" output')
+        logger.info(f'Successfully obtained {net_card} address from the "Get-NetIPAddress" output')
         return ip_address
 
 
