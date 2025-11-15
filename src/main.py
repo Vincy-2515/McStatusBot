@@ -12,11 +12,9 @@ COLOR_NAME = "\033[38;5;105m"
 COLOR_MESSAGE = "\033[38;5;59m"
 COLOR_RESET = "\033[0m"
 
-LOG_DIRECTORY_PATH = "./logs"
-
 LOG_MESSAGE_TIME_FORMAT = "%A, %H:%M:%S"
 
-FILE_LOG_MESSAGE_FORMAT = "[{asctime}][{levelname}][{name}]: {message}"
+FILE_LOG_MESSAGE_FORMAT = "[{asctime}][{levelname}][{filename}:{lineno}]: {message}"
 CONSOLE_LOG_MESSAGE_FORMAT = (
     "["
     + COLOR_TIME
@@ -30,11 +28,13 @@ CONSOLE_LOG_MESSAGE_FORMAT = (
     + "]"
     + "["
     + COLOR_NAME
-    + " {name:>30.30} "
+    + " {filename:>24.24}:{lineno:<6} "
     + COLOR_RESET
     + "]:"
     + " {message}"
 )
+
+LOG_DIRECTORY_PATH = "./logs"
 
 config_toml_path: str = ""
 settings = SETTINGS.Settings()
@@ -63,12 +63,23 @@ def main():
         logger.critical(f"failed the collection of the settings from the file: {e}")
         sys.exit(1)
 
+    logs_directory_list = os.listdir(LOG_DIRECTORY_PATH)
+
+    while len(logs_directory_list) > settings.max_number_of_logs_stored:
+        logs_directory_list.sort()
+        oldest_log = logs_directory_list[0]
+        logger.info(f"Removing '{oldest_log}'")
+        os.remove(LOG_DIRECTORY_PATH + "/" + oldest_log)
+        logs_directory_list = os.listdir(LOG_DIRECTORY_PATH)
+
 
 def loggingSetup():
     global logger
     logger = logging.getLogger(__name__)
     discord_logger = logging.getLogger("discord")
     logging.basicConfig(level=logging.INFO, datefmt=LOG_MESSAGE_TIME_FORMAT, format=CONSOLE_LOG_MESSAGE_FORMAT, style="{")
+
+    logger.info("Press [CTRL]+[C] to stop the bot, enjoy :)")
 
     try:
         os.makedirs(LOG_DIRECTORY_PATH)
@@ -115,14 +126,13 @@ class Client(commands.Bot):
             logger.error("The bot user is not initialized.")
             return
 
-        logger.info(f"logged in as {client.user} (ID: {client.user.id})")
-        logger.warning("press [CTRL]+[C] to stop the bot, enjoy :)")
+        logger.info(f"Logged in as {client.user} (ID: {client.user.id})")
 
         try:
             synced = await self.tree.sync(guild=guild)
-            logger.info(f"synchronized {len(synced)} command(s)")
+            logger.info(f"Synchronized {len(synced)} command(s)")
         except Exception as e:
-            logger.error(f"commands synchronization error: {e}")
+            logger.error(f"Commands synchronization error: {e}")
 
     async def setup_hook(self) -> None:
         self.tree.copy_global_to(guild=guild)
@@ -185,7 +195,7 @@ async def sendstatus(interaction: discord.Interaction):
     previous_message = await getMessage(settings.channel_id, settings.message_id)
 
     if not isinstance(previous_message, discord.Message):
-        logger.error(f"The message {settings.message_id} is not a Message")
+        logger.error("Couldn't edit the server stauts message: this is not a message")
         return
 
     try:
@@ -236,22 +246,28 @@ async def shutdownbot(interaction: discord.Interaction):
 
 async def updateServerStatusEmbed(forced_shutdown: bool = False):
     logger.info('Updating "server_status_embed"...')
-    updateServerStatusEmbed_start_time = time.perf_counter()
 
     image = None
     server_status_embed = None
 
     try:
+        updateServerStatusEmbed_start_time = time.perf_counter()
+
         previous_message = await getMessage(settings.channel_id, settings.message_id)
         image, server_status_embed = getServerStatusEmbed(forced_shutdown=forced_shutdown)
 
         if not isinstance(previous_message, discord.Message):
-            logger.error(f"The message {settings.message_id} is not a Message")
+            logger.error(f"Couldn't edit the server stauts message: this is not a message")
             return
 
         await previous_message.edit(
             attachments=[image], embed=server_status_embed
         )  ################################### TROPPO CONSUMO DI TEMPO
+
+        updateServerStatusEmbed_finish_time = time.perf_counter()
+        logger.info(
+            f'It took {(updateServerStatusEmbed_finish_time - updateServerStatusEmbed_start_time):.2f} seconds to update "server_status_embed"'
+        )
     except Exception as e:
         settings.updateSettings(config_toml_path)
         logger.error(f'failed "server_status_embed" update: {e}')
@@ -265,10 +281,6 @@ async def updateServerStatusEmbed(forced_shutdown: bool = False):
         if image is not None:
             image.close()
 
-    updateServerStatusEmbed_finish_time = time.perf_counter()
-    logger.info(
-        f'It took {(updateServerStatusEmbed_finish_time - updateServerStatusEmbed_start_time):.2f} seconds to update "server_status_embed"'
-    )
     logger.info(f'server_status: "{client.server_status}", player_count: {client.player_count}')
 
 
@@ -300,7 +312,7 @@ def getServerStatusEmbed(forced_shutdown: bool = False) -> tuple[discord.File, d
 
     if client.server_status == MCLOG.STRING_SERVER_STATUS_OFFLINE:
         server_status_embed = discord.Embed(
-            title=settings.server_name, colour=discord.Color.red(), timestamp=client.startup_time
+            title=settings.server_name, colour=discord.Color.red()
         )
     elif client.server_status == MCLOG.STRING_SERVER_STATUS_ONLINE:
         server_status_embed = discord.Embed(
@@ -308,7 +320,7 @@ def getServerStatusEmbed(forced_shutdown: bool = False) -> tuple[discord.File, d
         )
     elif client.server_status == MCLOG.STRING_SERVER_STATUS_STARTING:
         server_status_embed = discord.Embed(
-            title=settings.server_name, colour=discord.Color.yellow(), timestamp=client.startup_time
+            title=settings.server_name, colour=discord.Color.yellow()
         )
 
     addServerStatusFields(server_status_embed)

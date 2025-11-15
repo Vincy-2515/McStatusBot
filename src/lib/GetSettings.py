@@ -6,6 +6,8 @@ logger = logging.getLogger(__name__)
 
 class Settings:
     def __init__(self):
+        self.max_number_of_logs_stored: int
+
         self.bot_token: str
         self.bot_admins: str
 
@@ -27,12 +29,14 @@ class Settings:
             file = open(config_toml_path, "rb")
             toml_dict: dict[str, Any] = tomllib.load(file)
             file.close()
-            logger.info("updating settings from '{config_toml_path}'")
+            logger.info(f"Updating settings from '{config_toml_path}'")
         except Exception as e:
             raise Exception(f"could not open '{config_toml_path}': {e}")
 
-        self.bot_token = toml_dict["discord"]["bot_token"]
-        self.bot_admins = toml_dict["discord"]["bot_admins"]
+        self.max_number_of_logs_stored = toml_dict["app"]["max_number_of_logs_stored"]
+
+        self.bot_token = toml_dict["discord"]["bot"]["token"]
+        self.bot_admins = toml_dict["discord"]["bot"]["admins"]
 
         self.is_add_addresses_fields_enabled = toml_dict["discord"]["embed"]["add_addresses_fields"]
         self.server_status_update_delay = toml_dict["discord"]["embed"]["server_status"]["update_delay"]
@@ -51,6 +55,7 @@ class Settings:
 if __name__ == "__main__":
     settings = Settings()
     settings.updateSettings("../McStatusBot.toml")
+    print(f"maximum_number_of_logs_stored: {settings.max_number_of_logs_stored}")
     print(f"bot_token: {settings.bot_token}")
     print(f"bot_admins: {settings.bot_admins}")
     print(f"is_add_addresses_fields_enabled: {settings.is_add_addresses_fields_enabled}")

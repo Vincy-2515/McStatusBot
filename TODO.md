@@ -8,10 +8,9 @@
 - [x] migliorare il codice rendendolo più robusto
 - [x] implementare discord logging
 - [x] sistemare il logging in modo da creare un file nuovo ogni volta non rimpiazzando il log precedente
-- [ ] gestire i log eliminando quelli più vecchi dopo un determinato numero limite
-- [ ] aggiungere comando info
+- [x] gestire i log eliminando quelli più vecchi dopo un determinato numero limite
 
 ### SECONDARIE
-- [ ] aggiungere sistema di controllo versioni
-- [ ] leggere il numero di players massimi direttamente da "server.properties"
 - [ ] README.md
+- [ ] aggiungere sistema di controllo versioni
+- [ ] ottenere tutte le informazioni necessarie sul server tramite un socket con il server minecraft stesso
