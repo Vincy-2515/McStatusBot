@@ -9,6 +9,7 @@
 - [x] implementare discord logging
 - [x] sistemare il logging in modo da creare un file nuovo ogni volta non rimpiazzando il log precedente
 - [x] gestire i log eliminando quelli più vecchi dopo un determinato numero limite
+- [ ] add settings values checking
 
 ### SECONDARIE
 - [ ] README.md
