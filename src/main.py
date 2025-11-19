@@ -85,7 +85,7 @@ def loggingSetup():
         os.makedirs(LOG_DIRECTORY_PATH)
         logger.info(f"Directory '{LOG_DIRECTORY_PATH}' created successfully")
     except FileExistsError:
-        logger.info(f"Directory '{LOG_DIRECTORY_PATH}' already exists")
+        # logger.info(f"Directory '{LOG_DIRECTORY_PATH}' already exists")
         pass
     except OSError as e:
         logger.error(f"Error creating/accessing directory '{LOG_DIRECTORY_PATH}': {e}")
@@ -116,9 +116,7 @@ class Client(commands.Bot):
         self.previous_server_status: str = ""
         self.cycles_count = 0
 
-        self.ethernet_address: str = ""
-        self.wifi_address: str = ""
-        self.hamachi_address: str = ""
+        self.ip_addresses: list[str] = []
         self.e4mc_address: str = ""
 
     async def on_ready(self):
@@ -249,37 +247,42 @@ async def updateServerStatusEmbed(forced_shutdown: bool = False):
 
     image = None
     server_status_embed = None
+    previous_message = None
+
+    try:
+        image, server_status_embed = getServerStatusEmbed(forced_shutdown=forced_shutdown)
+    except Exception as e:
+        raise Exception(f"An error occurred during the creation of the embed: {e}")
+
+    try:
+        previous_message = await getMessage(settings.channel_id, settings.message_id)
+    except Exception as e:
+        logger.error(f"An error occurred while obtaining the message to edit: {e}")
 
     try:
         updateServerStatusEmbed_start_time = time.perf_counter()
 
-        previous_message = await getMessage(settings.channel_id, settings.message_id)
-        image, server_status_embed = getServerStatusEmbed(forced_shutdown=forced_shutdown)
-
         if not isinstance(previous_message, discord.Message):
-            logger.error(f"Couldn't edit the server stauts message: this is not a message")
-            return
+            raise Exception(f"Couldn't edit the server stauts message: this is not a message")
 
-        await previous_message.edit(
-            attachments=[image], embed=server_status_embed
-        )  ################################### TROPPO CONSUMO DI TEMPO
+        await previous_message.edit(attachments=[image], embed=server_status_embed)  # THE EDIT TAKES A LONG TIME
 
         updateServerStatusEmbed_finish_time = time.perf_counter()
         logger.info(
             f'It took {(updateServerStatusEmbed_finish_time - updateServerStatusEmbed_start_time):.2f} seconds to update "server_status_embed"'
         )
     except Exception as e:
-        settings.updateSettings(config_toml_path)
-        logger.error(f'failed "server_status_embed" update: {e}')
-        logger.info("sending a new message")
+        logger.error(f'Failed "server_status_embed" update, sending a new message. Caught exception: {e}')
         channel = client.get_channel(settings.channel_id)
 
         if isinstance(channel, discord.TextChannel):
-            if image is not None and server_status_embed is not None:
-                await channel.send(file=image, embed=server_status_embed)
-    finally:
-        if image is not None:
+            await channel.send(file=image, embed=server_status_embed)
+        else:
+            logger.error("Message not sent, this channel is not a channel")
             image.close()
+            return
+    finally:
+        image.close()
 
     logger.info(f'server_status: "{client.server_status}", player_count: {client.player_count}')
 
@@ -311,17 +314,13 @@ def getServerStatusEmbed(forced_shutdown: bool = False) -> tuple[discord.File, d
     server_status_embed = discord.Embed(title=settings.server_name, colour=discord.Color.dark_gray())
 
     if client.server_status == MCLOG.STRING_SERVER_STATUS_OFFLINE:
-        server_status_embed = discord.Embed(
-            title=settings.server_name, colour=discord.Color.red()
-        )
+        server_status_embed = discord.Embed(title=settings.server_name, colour=discord.Color.red())
     elif client.server_status == MCLOG.STRING_SERVER_STATUS_ONLINE:
         server_status_embed = discord.Embed(
             title=settings.server_name, colour=discord.Color.green(), timestamp=client.startup_time
         )
     elif client.server_status == MCLOG.STRING_SERVER_STATUS_STARTING:
-        server_status_embed = discord.Embed(
-            title=settings.server_name, colour=discord.Color.yellow()
-        )
+        server_status_embed = discord.Embed(title=settings.server_name, colour=discord.Color.yellow())
 
     addServerStatusFields(server_status_embed)
     if settings.is_add_addresses_fields_enabled:
@@ -363,46 +362,36 @@ def addServerStatusFields(server_status_embed: discord.Embed):
 
 
 def addAddressesFields(server_status_embed: discord.Embed):
-    if client.ethernet_address != "" or client.wifi_address != "" or client.e4mc_address != "" or client.hamachi_address != "":
+    if len(client.ip_addresses) != 0 or client.e4mc_address != "":
         server_status_embed.add_field(name="Indirizzi per la connessione:", value="", inline=False)
 
-    if client.ethernet_address != "" and client.wifi_address == "":
-        server_status_embed.add_field(
-            name="",
-            value=f"* __Indirizzo locale:__||```{client.ethernet_address}:{settings.server_port}```||",
-            inline=False,
-        )
-    if client.wifi_address != "":
-        server_status_embed.add_field(
-            name="",
-            value=f"* __Indirizzo locale:__||```{client.wifi_address}:{settings.server_port}```||",
-            inline=False,
-        )
+    if len(client.ip_addresses) != 0:
+        for i in range(len(client.ip_addresses)):
+            if client.ip_addresses[i] != "":
+                server_status_embed.add_field(
+                    name="",
+                    value=f"* __{settings.network_cards[i]}:__||```{client.ip_addresses[i]}:{settings.server_port}```||",
+                    inline=False,
+                )
+
     if client.e4mc_address != "":
-        server_status_embed.add_field(
-            name="",
-            value=f"* __Indirizzo e4mc:__||```{client.e4mc_address}```||",
-            inline=False,
-        )
-    if client.hamachi_address != "":
-        server_status_embed.add_field(
-            name="",
-            value=f"* __Indirizzo Hamachi:__||```{client.hamachi_address}:{settings.server_port}```||",
-            inline=False,
-        )
+        server_status_embed.add_field(name="", value=f"* __Indirizzo e4mc:__||```{client.e4mc_address}```||", inline=False)
 
 
 def updateAddresses():
-    client.ethernet_address = IPADDRESS.ipAddressGrabber("Ethernet")
-    client.wifi_address = IPADDRESS.ipAddressGrabber("vEthernet (Custom)")
-    client.hamachi_address = IPADDRESS.ipAddressGrabber("Hamachi")
-    client.e4mc_address = MCLOG.parseLatestLogForE4MCAddress(settings.latest_log_path)
+    if not settings.is_add_addresses_fields_enabled:
+        logger.info("'is_add_addresses_fields_enabled' is disabled, skipping address update")
+        return
+
+    for i in range(len(settings.network_cards)):
+        client.ip_addresses.append(IPADDRESS.ipAddressGrabber(settings.network_cards[i]))
+
+    if settings.is_show_e4mc_address_enabled:
+        client.e4mc_address = MCLOG.parseLatestLogForE4MCAddress(settings.latest_log_path)
 
 
 async def shutdown(forced_shutdown: bool):
-    client.ethernet_address = ""
-    client.wifi_address = ""
-    client.hamachi_address = ""
+    client.ip_addresses = []
     client.e4mc_address = ""
 
     await updateServerStatusEmbed(forced_shutdown=forced_shutdown)
