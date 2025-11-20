@@ -1,7 +1,7 @@
 @echo off
 :: All'avvio di questo .bat:
-::  - nessun parametro: console visibile, nessun log salvato
-::  - "--no-console": console invisibile, log salvato allo spegnimento del bot
+::  - nessun parametro: console visibile
+::  - "--no-console": console invisibile
 
 :: %~n0: is the name of this current file
 set BOT_NAME=%~n0
