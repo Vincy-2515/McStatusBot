@@ -1,4 +1,4 @@
-import discord, datetime, logging, time
+import discord, logging, datetime
 from discord.ext import commands
 from discord.ext import tasks
 from typing import Any
@@ -39,6 +39,7 @@ class Client(commands.Bot):
             return
 
         logger.info(f"Logged in as {client.user} (ID: {client.user.id})")
+        logger.info("The bot has successfully started, enjoy :)")
 
         try:
             synced = await self.tree.sync(guild=self.__guild)
@@ -56,21 +57,7 @@ class Client(commands.Bot):
                 f"Values have changed after {self.cycles_count} cycles (or {self.cycles_count * GLOBALS.settings.server_status_update_delay} seconds)"
             )
 
-            if self.server_status == MCLOG.STRING_SERVER_STATUS_ONLINE and self.after_online == False:
-                logger.info("The server is online")
-
-                if GLOBALS.settings.is_add_addresses_fields_enabled:
-                    HELPERS.updateAddresses()
-
-                self.startup_time = datetime.datetime.now()
-                self.after_online = True
-
-            elif self.server_status == MCLOG.STRING_SERVER_STATUS_STARTING:
-                logger.info("The server is starting")
-
-            elif self.server_status == MCLOG.STRING_SERVER_STATUS_OFFLINE and self.after_online == True:
-                logger.info("The server is offline, starting shutdown procedure...")
-                await HELPERS.shutdown(forced_shutdown=False)
+            await HELPERS.handleServerStatusChange()
 
             await HELPERS.updateServerStatusEmbed()
             HELPERS.updatePreviousValues()
@@ -102,37 +89,18 @@ async def sendstatus(interaction: discord.Interaction):
 
     await interaction.response.defer(thinking=True, ephemeral=True)
 
-    image, server_status_embed = HELPERS.getServerStatusEmbed()
-    previous_message = await HELPERS.getMessage(GLOBALS.settings.channel_id, GLOBALS.settings.message_id)
-
-    if not isinstance(previous_message, discord.Message):
-        logger.error("Couldn't edit the server stauts message: this is not a message")
+    try:
+        await HELPERS.editChoosenPreviousMessage()
+        await interaction.followup.send("Ho modificato il messaggio già esistente")
         return
+    except Exception as e:
+        logger.error(f"Couldn't edit the message: {e}")
 
     try:
-        updateServerStatusEmbed_start_time = time.perf_counter()
-
-        logger.info("Editing the previous message")
-        await previous_message.edit(embed=server_status_embed, attachments=[image])
-        await interaction.followup.send("Ho modificato il messaggio già esistente")
-
-        updateServerStatusEmbed_finish_time = time.perf_counter()
-        logger.info(
-            f'It took {(updateServerStatusEmbed_finish_time - updateServerStatusEmbed_start_time):.2f} seconds to update "server_status_embed"'
-        )
-
+        await HELPERS.sendNewMessageToChoosenChannel()
+        await interaction.followup.send("Ho inviato un nuovo messaggio, non ho potuto modificare quello esistente")
     except Exception as e:
-        updateServerStatusEmbed_start_time = time.perf_counter()
-
-        logger.warning(f"couldn't edit the server stauts message, sending a new message. Error: {e}")
-        await interaction.followup.send("Sto inviando un nuovo messaggio")
-        await interaction.followup.send(file=image, embed=server_status_embed)
-        GLOBALS.settings.updateSettings(GLOBALS.config_toml_path)
-
-        updateServerStatusEmbed_finish_time = time.perf_counter()
-        logger.info(
-            f'It took {(updateServerStatusEmbed_finish_time - updateServerStatusEmbed_start_time):.2f} seconds to send "server_status_embed"'
-        )
+        logger.error(f"Couldn't send the message: {e}")
 
 
 @client.tree.command(name="reloaddata", description="Ricarica tutti i dati che il bot raccoglie da vari files")

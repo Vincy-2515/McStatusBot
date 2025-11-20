@@ -31,25 +31,20 @@ CONSOLE_LOG_MESSAGE_FORMAT = (
 
 LOG_DIRECTORY_PATH = "./logs"
 
-logger: logging.Logger
 
-
-def loggingSetup():
-    global logger
-    logger = logging.getLogger(__name__)
-    discord_logger = logging.getLogger("discord")
+def loggingSetup(root_logger: logging.Logger):
     logging.basicConfig(level=logging.INFO, datefmt=LOG_MESSAGE_TIME_FORMAT, format=CONSOLE_LOG_MESSAGE_FORMAT, style="{")
 
-    logger.info("Press [CTRL]+[C] to stop the bot, enjoy :)")
+    root_logger.info("Press [CTRL]+[C] to forcefully stop the bot, beware that doing this won't update the embed")
 
     try:
         os.makedirs(LOG_DIRECTORY_PATH)
-        logger.info(f"Directory '{LOG_DIRECTORY_PATH}' created successfully")
+        root_logger.info(f"Directory '{LOG_DIRECTORY_PATH}' created successfully")
     except FileExistsError:
         # logger.info(f"Directory '{LOG_DIRECTORY_PATH}' already exists")
         pass
     except OSError as e:
-        logger.error(f"Error creating/accessing directory '{LOG_DIRECTORY_PATH}': {e}")
+        root_logger.error(f"Error creating/accessing directory '{LOG_DIRECTORY_PATH}': {e}")
         return
 
     now = datetime.datetime.now()
@@ -58,16 +53,15 @@ def loggingSetup():
     logger_file_handler_formatter = logging.Formatter(FILE_LOG_MESSAGE_FORMAT, datefmt=LOG_MESSAGE_TIME_FORMAT, style="{")
     logger_file_handler.setFormatter(logger_file_handler_formatter)
 
-    logger.addHandler(logger_file_handler)
-    discord_logger.addHandler(logger_file_handler)
+    root_logger.addHandler(logger_file_handler)
 
 
-def deleteOldLogs():
+def deleteOldLogs(root_logger: logging.Logger):
     logs_directory_list = os.listdir(LOG_DIRECTORY_PATH)
 
     while len(logs_directory_list) > GLOBALS.settings.max_number_of_logs_stored:
         logs_directory_list.sort()
         oldest_log = logs_directory_list[0]
-        logger.info(f"Removing '{oldest_log}'")
-        os.remove(LOG_DIRECTORY_PATH + "" + oldest_log)
+        root_logger.info(f"Removing '{oldest_log}'")
+        os.remove(LOG_DIRECTORY_PATH + "/" + oldest_log)
         logs_directory_list = os.listdir(LOG_DIRECTORY_PATH)

@@ -1,4 +1,4 @@
-import sys, time, discord, logging
+import sys, time, discord, logging, datetime
 from typing import Optional
 import lib.bot.bot as BOT
 import lib.globals as GLOBALS
@@ -8,60 +8,58 @@ import lib.utils.IpAddressGrabber as IPADDRESS
 
 logger = logging.getLogger(__name__)
 
+## messages managing ##################################################################################################
 
-async def updateServerStatusEmbed(forced_shutdown: bool = False):
-    logger.info('Updating "server_status_embed"...')
 
-    image = None
-    server_status_embed = None
-    previous_message = None
-
+async def editChoosenPreviousMessage(forced_shutdown: bool = False) -> bool:
     try:
-        image, server_status_embed = getServerStatusEmbed(forced_shutdown=forced_shutdown)
+        image, server_status_embed = getServerStatusEmbed()
     except Exception as e:
         raise Exception(f"An error occurred during the creation of the embed: {e}")
 
     try:
-        previous_message = await getMessage(GLOBALS.settings.channel_id, GLOBALS.settings.message_id)
+        previous_message = await getMessageObject(GLOBALS.settings.channel_id, GLOBALS.settings.message_id)
     except Exception as e:
-        logger.error(f"An error occurred while obtaining the message to edit: {e}")
+        raise Exception(f"An error occurred while obtaining the message to edit: {e}")
 
-    try:
+    if isinstance(previous_message, discord.Message):
+
         updateServerStatusEmbed_start_time = time.perf_counter()
 
-        if not isinstance(previous_message, discord.Message):
-            raise Exception(f"Couldn't edit the server stauts message: this is not a message")
-
-        await previous_message.edit(attachments=[image], embed=server_status_embed)  # THE EDIT TAKES A LONG TIME
+        logger.info("Editing previous message")
+        await previous_message.edit(embed=server_status_embed, attachments=[image])
 
         updateServerStatusEmbed_finish_time = time.perf_counter()
         logger.info(
             f'It took {(updateServerStatusEmbed_finish_time - updateServerStatusEmbed_start_time):.2f} seconds to update "server_status_embed"'
         )
-    except Exception as e:
-        logger.error(f'Failed "server_status_embed" update, sending a new message. Caught exception: {e}')
-        channel = BOT.client.get_channel(GLOBALS.settings.channel_id)
+        return True
 
-        if isinstance(channel, discord.TextChannel):
-            updateServerStatusEmbed_start_time = time.perf_counter()
+    image.close()
+    raise Exception("This message is not a message")
 
-            await channel.send(file=image, embed=server_status_embed)
 
-            updateServerStatusEmbed_finish_time = time.perf_counter()
-            logger.info(
-                f'It took {(updateServerStatusEmbed_finish_time - updateServerStatusEmbed_start_time):.2f} seconds to send "server_status_embed"'
-            )
-        else:
-            logger.error("Message not sent, this channel is not a channel")
-            image.close()
-            return
-    finally:
+async def sendNewMessageToChoosenChannel() -> bool:
+    image, server_status_embed = getServerStatusEmbed()
+    channel = BOT.client.get_channel(GLOBALS.settings.channel_id)
+
+    if isinstance(channel, discord.TextChannel):
+        updateServerStatusEmbed_start_time = time.perf_counter()
+
+        await channel.send(file=image, embed=server_status_embed)
+
+        updateServerStatusEmbed_finish_time = time.perf_counter()
+        logger.info(
+            f'It took {(updateServerStatusEmbed_finish_time - updateServerStatusEmbed_start_time):.2f} seconds to send "server_status_embed"'
+        )
         image.close()
+        return True
 
-    logger.info(f'server_status: "{BOT.client.server_status}", player_count: {BOT.client.player_count}')
+    image.close()
+    raise Exception("This channel is not a channel")
 
 
-async def getMessage(channel_id: int, message_id: int) -> Optional[discord.Message]:
+async def getMessageObject(channel_id: int, message_id: int) -> Optional[discord.Message]:
     channel = BOT.client.get_channel(channel_id)
 
     if not isinstance(channel, discord.TextChannel):
@@ -80,6 +78,25 @@ async def getMessage(channel_id: int, message_id: int) -> Optional[discord.Messa
     return None
 
 
+## embed managing #####################################################################################################
+
+
+async def updateServerStatusEmbed(forced_shutdown: bool = False):
+    logger.info('Updating "server_status_embed"...')
+
+    try:
+        await editChoosenPreviousMessage(forced_shutdown)
+    except Exception as e:
+        logger.error(f"Couldn't edit the message: {e}")
+
+    try:
+        await sendNewMessageToChoosenChannel()
+    except Exception as e:
+        logger.error(f"Couldn't send the message: {e}")
+
+    logger.info(f'server_status: "{BOT.client.server_status}", player_count: {BOT.client.player_count}')
+
+
 def getServerStatusEmbed(forced_shutdown: bool = False) -> tuple[discord.File, discord.Embed]:
     splitted_path = GLOBALS.settings.embed_image_path.split("/")
     imagename = splitted_path[len(splitted_path) - 1]
@@ -89,10 +106,12 @@ def getServerStatusEmbed(forced_shutdown: bool = False) -> tuple[discord.File, d
 
     if BOT.client.server_status == MCLOG.STRING_SERVER_STATUS_OFFLINE:
         server_status_embed = discord.Embed(title=GLOBALS.settings.server_name, colour=discord.Color.red())
+
     elif BOT.client.server_status == MCLOG.STRING_SERVER_STATUS_ONLINE:
         server_status_embed = discord.Embed(
             title=GLOBALS.settings.server_name, colour=discord.Color.green(), timestamp=BOT.client.startup_time
         )
+
     elif BOT.client.server_status == MCLOG.STRING_SERVER_STATUS_STARTING:
         server_status_embed = discord.Embed(title=GLOBALS.settings.server_name, colour=discord.Color.yellow())
 
@@ -108,21 +127,6 @@ def getServerStatusEmbed(forced_shutdown: bool = False) -> tuple[discord.File, d
     server_status_embed.set_image(url=f"attachment://{imagename}")
 
     return image, server_status_embed
-
-
-async def handleCommandInvocation(interaction: discord.Interaction, command_name: str, admin_only_command: bool) -> bool:
-    logger.info(f'"/{command_name}" invoked by {interaction.user}')
-
-    if (str(interaction.user) not in GLOBALS.settings.bot_admins) and (admin_only_command == True):
-        await interaction.response.send_message("Non puoi eseguire questo comando")
-        return False
-    return True
-
-
-def updatePreviousValues():
-    BOT.client.previous_player_count = BOT.client.player_count
-    BOT.client.previous_server_status = BOT.client.server_status
-    BOT.client.cycles_count = 0
 
 
 def addServerStatusFields(server_status_embed: discord.Embed):
@@ -155,6 +159,40 @@ def addAddressesFields(server_status_embed: discord.Embed):
         server_status_embed.add_field(name="", value=f"* __Indirizzo e4mc:__||```{BOT.client.e4mc_address}```||", inline=False)
 
 
+## command helpers ####################################################################################################
+
+
+async def handleCommandInvocation(interaction: discord.Interaction, command_name: str, admin_only_command: bool) -> bool:
+    logger.info(f'"/{command_name}" invoked by {interaction.user}')
+
+    if (str(interaction.user) not in GLOBALS.settings.bot_admins) and (admin_only_command == True):
+        await interaction.response.send_message("Non puoi eseguire questo comando")
+        logger.warning(f'{interaction.user} cannot run the command "/{command_name}"')
+        return False
+    return True
+
+
+## other helpers ######################################################################################################
+
+
+async def handleServerStatusChange():
+    if BOT.client.server_status == MCLOG.STRING_SERVER_STATUS_ONLINE and BOT.client.after_online == False:
+        logger.info("The server is online")
+
+        if GLOBALS.settings.is_add_addresses_fields_enabled:
+            updateAddresses()
+
+        BOT.client.startup_time = datetime.datetime.now()
+        BOT.client.after_online = True
+
+    elif BOT.client.server_status == MCLOG.STRING_SERVER_STATUS_STARTING:
+        logger.info("The server is starting")
+
+    elif BOT.client.server_status == MCLOG.STRING_SERVER_STATUS_OFFLINE and BOT.client.after_online == True:
+        logger.info("The server is offline, starting shutdown procedure...")
+        await shutdown(forced_shutdown=False)
+
+
 def updateAddresses():
     if not GLOBALS.settings.is_add_addresses_fields_enabled:
         logger.info("'is_add_addresses_fields_enabled' is disabled, skipping address update")
@@ -165,6 +203,12 @@ def updateAddresses():
 
     if GLOBALS.settings.is_show_e4mc_address_enabled:
         BOT.client.e4mc_address = MCLOG.parseLatestLogForE4MCAddress(GLOBALS.settings.latest_log_path)
+
+
+def updatePreviousValues():
+    BOT.client.previous_player_count = BOT.client.player_count
+    BOT.client.previous_server_status = BOT.client.server_status
+    BOT.client.cycles_count = 0
 
 
 async def shutdown(forced_shutdown: bool):

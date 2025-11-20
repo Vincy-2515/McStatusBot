@@ -1,5 +1,8 @@
 @echo off
-set BOT_NAME=McStatusBot
-start "%BOT_NAME%" "%BOT_NAME%.bat"
-::PLACEHOLDER: JAVA SERVER STARTER COMMAND GOES HERE!!!
-powershell Get-Process -Name "%BOT_NAME%" -ErrorAction Ignore >nul 2>&1 && ECHO Warning! "%BOT_NAME%" is still running.
+
+::Add "-WindowStyle Hidden" to the end of the next line to hide the console window 
+powershell Start-Process -FilePath "McStatusBot.exe"
+
+::PLACEHOLDER: Java Minecraft Server Launch Command goes here
+
+powershell Get-Process -Name "McStatusBot" -ErrorAction Ignore >nul 2>&1 && ECHO Warning! "McStatusBot" is still running.
