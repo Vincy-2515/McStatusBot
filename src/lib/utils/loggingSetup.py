@@ -1,5 +1,5 @@
 import logging, datetime, os
-import lib.globals as GLOBALS
+import lib.globals as Globals
 
 COLOR_TIME = "\033[38;5;59m"
 COLOR_LEVEL_NAME = "\033[38;5;25m"
@@ -59,7 +59,7 @@ def loggingSetup(root_logger: logging.Logger):
 def deleteOldLogs(root_logger: logging.Logger):
     logs_directory_list = os.listdir(LOG_DIRECTORY_PATH)
 
-    while len(logs_directory_list) > GLOBALS.settings.max_number_of_logs_stored:
+    while len(logs_directory_list) > Globals.settings.max_number_of_logs_stored:
         logs_directory_list.sort()
         oldest_log = logs_directory_list[0]
         root_logger.info(f"Removing '{oldest_log}'")

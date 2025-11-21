@@ -2,9 +2,9 @@ import discord, logging, datetime
 from discord.ext import commands
 from discord.ext import tasks
 from typing import Any
-import lib.globals as GLOBALS
-import lib.bot.botHelperFunctions as HELPERS
-import lib.utils.LatestLogParser as MCLOG
+import lib.globals as Globals
+import lib.bot.botHelperFunctions as Helpers
+import lib.utils.LatestLogParser as McLog
 
 
 logger = logging.getLogger(__name__)
@@ -29,7 +29,7 @@ class Client(commands.Bot):
         self.e4mc_address: str = ""
 
     async def setup_hook(self) -> None:
-        self.__guild = discord.Object(id=GLOBALS.settings.server_id)
+        self.__guild = discord.Object(id=Globals.settings.server_id)
         self.tree.copy_global_to(guild=self.__guild)
         self.updateServerStatus.start()
 
@@ -47,20 +47,20 @@ class Client(commands.Bot):
         except Exception as e:
             logger.error(f"Commands synchronization error: {e}")
 
-    @tasks.loop(seconds=GLOBALS.settings.server_status_update_delay)
+    @tasks.loop(seconds=Globals.settings.server_status_update_delay)
     async def updateServerStatus(self):
-        self.server_status = MCLOG.parseLatestLogForServerStatus(GLOBALS.settings.latest_log_path)
-        self.player_count = MCLOG.parseLatestLogForPlayerCount(GLOBALS.settings.latest_log_path)
+
+        self.server_status = McLog.parseLatestLogForServerStatus(Globals.settings.latest_log_path)
+        self.player_count = McLog.parseLatestLogForPlayerCount(Globals.settings.latest_log_path)
 
         if (self.previous_player_count != self.player_count) or (self.previous_server_status != self.server_status):
-            logger.info(
-                f"Values have changed after {self.cycles_count} cycles (or {self.cycles_count * GLOBALS.settings.server_status_update_delay} seconds)"
-            )
 
-            await HELPERS.handleServerStatusChange()
+            seconds_since_last_change = self.cycles_count * Globals.settings.server_status_update_delay
+            logger.info(f"Values have changed after {self.cycles_count} cycles (or {seconds_since_last_change} seconds)")
 
-            await HELPERS.updateServerStatusEmbed()
-            HELPERS.updatePreviousValues()
+            await Helpers.handleServerStatusChange()
+            await Helpers.updateServerStatusEmbed()
+            Helpers.updatePreviousValues()
 
         else:
             self.cycles_count += 1
@@ -82,7 +82,7 @@ client = Client(command_prefix="/", intents=intents)  # type: ignore
 )
 async def sendstatus(interaction: discord.Interaction):
     if (
-        await HELPERS.handleCommandInvocation(interaction=interaction, command_name="sendstatus", admin_only_command=True)
+        await Helpers.handleCommandInvocation(interaction=interaction, command_name="sendstatus", admin_only_command=True)
         == False
     ):
         return
@@ -90,14 +90,14 @@ async def sendstatus(interaction: discord.Interaction):
     await interaction.response.defer(thinking=True, ephemeral=True)
 
     try:
-        await HELPERS.editChoosenPreviousMessage()
+        await Helpers.editChoosenPreviousMessage()
         await interaction.followup.send("Ho modificato il messaggio già esistente")
         return
     except Exception as e:
         logger.error(f"Couldn't edit the message: {e}")
 
     try:
-        await HELPERS.sendNewMessageToChoosenChannel()
+        await Helpers.sendNewMessageToChoosenChannel()
         await interaction.followup.send("Ho inviato un nuovo messaggio, non ho potuto modificare quello esistente")
     except Exception as e:
         logger.error(f"Couldn't send the message: {e}")
@@ -106,7 +106,7 @@ async def sendstatus(interaction: discord.Interaction):
 @client.tree.command(name="reloaddata", description="Ricarica tutti i dati che il bot raccoglie da vari files")
 async def reloaddata(interaction: discord.Interaction):
     if (
-        await HELPERS.handleCommandInvocation(interaction=interaction, command_name="reloaddata", admin_only_command=True)
+        await Helpers.handleCommandInvocation(interaction=interaction, command_name="reloaddata", admin_only_command=True)
         == False
     ):
         return
@@ -114,15 +114,15 @@ async def reloaddata(interaction: discord.Interaction):
     await interaction.response.defer(thinking=True, ephemeral=True)
 
     try:
-        GLOBALS.settings.updateSettings(GLOBALS.config_toml_path)
+        Globals.settings.updateSettings(Globals.config_toml_path)
 
-        if GLOBALS.settings.is_add_addresses_fields_enabled:
-            HELPERS.updateAddresses()
+        if Globals.settings.is_add_addresses_fields_enabled:
+            Helpers.updateAddresses()
 
-        client.server_status = MCLOG.parseLatestLogForServerStatus(GLOBALS.settings.latest_log_path)
-        client.player_count = MCLOG.parseLatestLogForPlayerCount(GLOBALS.settings.latest_log_path)
+        client.server_status = McLog.parseLatestLogForServerStatus(Globals.settings.latest_log_path)
+        client.player_count = McLog.parseLatestLogForPlayerCount(Globals.settings.latest_log_path)
 
-        await HELPERS.updateServerStatusEmbed()
+        await Helpers.updateServerStatusEmbed()
 
         logger.info("All data and GLOBALS.settings are reloaded")
         await interaction.followup.send("Dati e impostazioni ricaricati")
@@ -134,14 +134,14 @@ async def reloaddata(interaction: discord.Interaction):
 @client.tree.command(name="shutdownbot", description="Manda il bot offline")
 async def shutdownbot(interaction: discord.Interaction):
     if (
-        await HELPERS.handleCommandInvocation(interaction=interaction, command_name="shutdownbot", admin_only_command=True)
+        await Helpers.handleCommandInvocation(interaction=interaction, command_name="shutdownbot", admin_only_command=True)
         == False
     ):
         return
 
     await interaction.response.send_message("Sto per andare offline", ephemeral=True)
-    await HELPERS.shutdown(forced_shutdown=True)
+    await Helpers.shutdown(forced_shutdown=True)
 
 
 def run():
-    client.run(GLOBALS.settings.bot_token, log_handler=None)  # MUST BE CALLED AFTER COMMAND DEFINITION
+    client.run(Globals.settings.bot_token, log_handler=None)  # MUST BE CALLED AFTER COMMAND DEFINITION

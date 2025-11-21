@@ -1,4 +1,4 @@
-import lib.utils.GetSettings as SETTINGS
+import lib.utils.GetSettings as Settings
 
 config_toml_path: str = ""
-settings:SETTINGS.Settings = SETTINGS.Settings()
+settings:Settings.Settings = Settings.Settings()

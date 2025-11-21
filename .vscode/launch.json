@@ -5,10 +5,10 @@
             "name": "Python: Debug McStatusBot",
             "type": "debugpy",
             "request": "launch",
-            "program": "${workspaceFolder}/src/main.py",
+            "program": "${workspaceFolder}\\src\\main.py",
             "args": [
                 "--config-toml",
-                "${workspaceFolder}/../McStatusBot.toml"
+                "${workspaceFolder}\\testing_resources\\McStatusBot.toml"
             ],
             "console": "integratedTerminal",
             "justMyCode": false
