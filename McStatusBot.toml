@@ -1,0 +1,29 @@
+# NOTE: WHEN FILLING OUT THIS FILE, MAKE SURE ALL FIELDS CONTAIN A VALUE
+
+[app]
+max_number_of_logs_stored = 1 # the amount of logs the bot app will keep, minimum is 1
+
+[discord.bot]
+admins = [] # discord user tags, can be multiple   
+token = "" # your bot token
+
+[discord.embed]
+path.embed_image = 'path/to/your/embed_image.png' # path to the embed image
+server_status.update_delay = 1 # amount of seconds between server status checks, minimum is 1
+
+[discord.embed.connectivity]
+add_addresses_fields = false # set to true if you want ip addresses for server connection shown in the embed
+network_cards = [] # the names of the network cards to get the ip addresses from
+show_e4mc_address = false # wheter you want the bot to show your e4mc address in the embed
+
+[discord.id]
+# to obtain these ids, enable developer mode in Discord, then right-click the respective item and select "Copy ID"
+channel = 0 # your discord channel id
+message = 0 # your discord message id
+server = 0 # your discord server id
+
+[minecraft.server]
+max_players = 20 # maximum number of players
+name = "Minecraft Server" # your server name
+path.latest_log = 'logs/latest.log' # path to the minecraft latest.log file
+port = 25565 # your server port
