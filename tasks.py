@@ -4,7 +4,6 @@ from invoke.context import Context
 
 SEPARATOR = "------------------------------------------------------------------------------------------"
 
-
 PYINST = "pyinstaller"
 PYINST_FLAGS = "\
  --name=McStatusBot\
